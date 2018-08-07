@@ -1,0 +1,37 @@
+image: ubuntu:xenial
+
+stages:
+    - test
+    - pages
+    - release
+
+before_script:
+    - apt-get update
+    - apt-get install -y software-properties-common
+    - apt-add-repository universe
+    - apt-get update
+    - apt-get install -y python-pip make python-numpy python-matplotlib python-biopython python-pandas mummer last-align
+    - pip install --upgrade pip sphinx sphinx-argparse sphinx_rtd_theme pytest pycmd futures packaging appdirs pysam
+    - hash -r pip
+    - pip install -e ./
+
+  
+do_testing:
+  stage: test
+  script:
+    - make test
+  except:
+    - tags
+    
+pages:
+  stage: pages
+  script: 
+    - make docs
+    - mv docs/_build/html public
+  artifacts:
+    paths:
+    - public/
+  only:
+    - master
+  except:
+    - tags
