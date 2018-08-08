@@ -60,6 +60,12 @@ optional arguments:
   -u unclass_output    Write unclassified reads to this file.
 ```
 
+Example usage:
+
+```bash
+cdna_classifier.py -b cdna_barcodes.fas -r report.pdf -u unclassified.fq input.fq full_length_output.fq
+```
+
 The primers have to specified as they are on the forward strand (see `data/cdna_barcodes.fas` for an example).
 The score cutoffs for each primer are calculated by aligning them against random sequences and applying the following formula: `<-s percentile of the score distribution> + 2 * <standard deviation of score distribution>`. The default settings are stringent in order to avoid false positives. Stringency can be lowered by lowering the value of `-s`.
 
