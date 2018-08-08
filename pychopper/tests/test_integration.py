@@ -18,7 +18,7 @@ class TestIntegration(unittest.TestCase):
         output_fasta = path.join(test_base, 'test_output.fas')
         expected_output = path.join(test_base, 'expected_output.fas')
 
-        subprocess.call([cdna_classifier, '-i', 'fasta','-s','95.0', '-b', barcodes, input_fasta, output_fasta])
+        subprocess.call([cdna_classifier, '-i', 'fasta', '-s', '95.0', '-b', barcodes, input_fasta, output_fasta])
         retval = subprocess.call(['cmp', output_fasta, expected_output])
         self.assertEqual(retval, 0)
         os.remove(output_fasta)
