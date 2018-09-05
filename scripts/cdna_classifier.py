@@ -23,7 +23,7 @@ parser.add_argument('-g', metavar='aln_params', type=str,
 parser.add_argument(
     '-t', metavar='target_length', type=int, default=200, help="Number of bases to scan at each end (200).")
 parser.add_argument(
-    '-s', metavar='score_percentile', type=float, default=100, help="Score cutoff percentile (100).")
+    '-s', metavar='score_percentile', type=float, default=98, help="Score cutoff percentile (98).")
 parser.add_argument(
     '-n', metavar='sample_size', type=int, default=100000, help="Number of samples when calculating score cutoff (100000).")
 parser.add_argument(
