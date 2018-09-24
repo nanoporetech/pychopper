@@ -52,7 +52,7 @@ def score_cutoff(barcode, aln_params, target_length, percentile, nr_samples):
     null_scores = []
     for aln in score_iter:
         null_scores.append(aln.score)
-    #cutoff = np.percentile(null_scores, percentile) + np.std(null_scores) * 2
+    # cutoff = np.percentile(null_scores, percentile) + np.std(null_scores) * 2
     cutoff = np.percentile(null_scores, percentile)
     return cutoff
 
