@@ -4,7 +4,19 @@ Pychopper: A tool to identify full length cDNA reads
 Installation
 ------------
 
-Install the package:
+Install via pip:
+
+```
+pip install git+https://github.com/nanoporetech/pychopper.git
+```
+
+Or clone the repository:
+
+```
+git clone https://github.com/nanoporetech/pychopper.git
+```
+
+And install the package:
 
 ```
 python setup.py install
@@ -68,11 +80,6 @@ cdna_classifier.py -b cdna_barcodes.fas -r report.pdf -u unclassified.fq input.f
 
 The primers have to specified as they are on the forward strand (see `data/cdna_barcodes.fas` for an example).
 The score cutoffs for each primer are calculated by aligning them against random sequences and taking the `-s` percentile of the score distribution (98 by default).
-
-Documentation
--------------
-
-Documentation can be found at: XXX 
 
 Contributing
 ------------
