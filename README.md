@@ -53,7 +53,7 @@ optional arguments:
   -g aln_params        Alignment parameters (match,
                        mismatch,gap_open,gap_extend).
   -t target_length     Number of bases to scan at each end (200).
-  -s score_percentile  Score cutoff percentile (100).
+  -s score_percentile  Score cutoff percentile (98).
   -n sample_size       Number of samples when calculating score cutoff
                        (100000).
   -r report_pdf        Report PDF.
@@ -67,7 +67,7 @@ cdna_classifier.py -b cdna_barcodes.fas -r report.pdf -u unclassified.fq input.f
 ```
 
 The primers have to specified as they are on the forward strand (see `data/cdna_barcodes.fas` for an example).
-The score cutoffs for each primer are calculated by aligning them against random sequences and applying the following formula: `<-s percentile of the score distribution> + 2 * <standard deviation of score distribution>`. The default settings are stringent in order to avoid false positives. Stringency can be lowered by lowering the value of `-s`.
+The score cutoffs for each primer are calculated by aligning them against random sequences and taking the `-s` percentile of the score distribution (98 by default).
 
 Documentation
 -------------
