@@ -85,5 +85,4 @@ Contributing
 ------------
 
 - Please fork the repository and create a merge request to contribute.
-- Use [bumpversion](http://bit.ly/2cSUryt) to manage package versioning.
 - The code should be [PEP8](https://www.python.org/dev/peps/pep-0008) compliant, which can be tested by `make lint`.
