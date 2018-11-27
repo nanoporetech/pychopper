@@ -99,7 +99,7 @@ The score cutoffs for each primer are calculated by aligning them against random
 - Use [bumpversion](https://github.com/peritus/bumpversion) to manage package versioning.
 - The code should be [PEP8](https://www.python.org/dev/peps/pep-0008) compliant, which can be tested by `make lint`.
 
-5\. Help:
+4\. Help:
 ---------
 
 ## Licence and Copyright:
