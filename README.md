@@ -114,5 +114,5 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ## References and Supporting Information:
 
-See the post announcing the tool at the Oxford Nanopore community [here](https://community.nanoporetech.com/posts/new-transcriptomics-analys).
+See the post announcing the tool at the Oxford Nanopore Technologies community [here](https://community.nanoporetech.com/posts/new-transcriptomics-analys).
 
