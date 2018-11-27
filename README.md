@@ -8,7 +8,7 @@ Pychopper: A tool to identify full length cDNA reads
 1\. Introduction:
 -----------------
 
-Tool to identify full length cDNA reads. Primers have to specified as they are
+Tool to identify full length cDNA reads. Primers have to be specified as they are
 on the forward strand.
 
 2\. Getting Started:
@@ -57,12 +57,12 @@ Issue `make help` to get a list of `make` targets.
 ## Usage:
 
 ```
-usage: cdna_classifier.py [-h] -b barcodes [-i input_format] [-g aln_params]
+usage: cdna_classifier.py [-h] -b primers [-i input_format] [-g aln_params]
                           [-t target_length] [-s score_percentile]
                           [-n sample_size] [-r report_pdf] [-u unclass_output]
                           input_fastx output_fastx
 
-Tool to identify full length cDNA reads. Primers have to specified as they are
+Tool to identify full length cDNA reads. Primers have to be specified as they are
 on the forward strand.
 
 positional arguments:
@@ -71,7 +71,7 @@ positional arguments:
 
 optional arguments:
   -h, --help           show this help message and exit
-  -b barcodes          Primers fasta.
+  -b primers          Primers fasta.
   -i input_format      Input/output format (fastq).
   -g aln_params        Alignment parameters (match,
                        mismatch,gap_open,gap_extend).
