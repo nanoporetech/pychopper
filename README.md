@@ -92,8 +92,8 @@ cdna_classifier.py -b cdna_barcodes.fas -r report.pdf -u unclassified.fq input.f
 The primers have to specified as they are on the forward strand (see `data/cdna_barcodes.fas` for an example).
 The score cutoffs for each primer are calculated by aligning them against random sequences and taking the `-s` percentile of the score distribution (98 by default).
 
-3\. Contributing
-----------------
+3\. Contributing:
+-----------------
 
 - Please fork the repository and create a merge request to contribute.
 - Use [bumpversion](https://github.com/peritus/bumpversion) to manage package versioning.
