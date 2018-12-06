@@ -51,7 +51,7 @@ make docs
 
 Issue `make help` to get a list of `make` targets.
 
-## Usage:
+## Usage
 
 ```
 usage: cdna_classifier.py [-h] -b primers [-i input_format] [-g aln_params]
