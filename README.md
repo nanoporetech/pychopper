@@ -2,10 +2,10 @@
 
 -----------------------------
 
-Pychopper: A tool to identify full length cDNA reads
-====================================================
+Pychopper
+=========
 
-Tool to identify full length cDNA reads. Primers have to be specified as they are
+A tool to identify full length cDNA reads. Primers have to be specified as they are
 on the forward strand.
 
 Getting Started
