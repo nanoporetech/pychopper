@@ -5,16 +5,13 @@
 Pychopper: A tool to identify full length cDNA reads
 ====================================================
 
-1\. Introduction:
------------------
-
 Tool to identify full length cDNA reads. Primers have to be specified as they are
 on the forward strand.
 
-2\. Getting Started:
---------------------
+Getting Started
+================
 
-## Installation:
+## Installation
 
 Install via pip:
 
@@ -92,17 +89,17 @@ cdna_classifier.py -b cdna_barcodes.fas -r report.pdf -u unclassified.fq input.f
 The primers have to specified as they are on the forward strand (see `data/cdna_barcodes.fas` for an example).
 The score cutoffs for each primer are calculated by aligning them against random sequences and taking the `-s` percentile of the score distribution (98 by default).
 
-3\. Contributing:
------------------
+Contributing
+================
 
 - Please fork the repository and create a merge request to contribute.
 - Use [bumpversion](https://github.com/peritus/bumpversion) to manage package versioning.
 - The code should be [PEP8](https://www.python.org/dev/peps/pep-0008) compliant, which can be tested by `make lint`.
 
-4\. Help:
----------
+Help
+====
 
-## Licence and Copyright:
+## Licence and Copyright
 
 (c) 2018 Oxford Nanopore Technologies Ltd.
 
@@ -110,9 +107,9 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-## FAQs and tips:
+## FAQs and tips
 
-## References and Supporting Information:
+## References and Supporting Information
 
 See the post announcing the tool at the Oxford Nanopore Technologies community [here](https://community.nanoporetech.com/posts/new-transcriptomics-analys).
 
