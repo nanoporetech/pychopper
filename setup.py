@@ -13,6 +13,8 @@ requirements = [
     'matplotlib',
     'six',
     'tqdm',
+    'pandas',
+    'pytest'
 ]
 
 test_requirements = [

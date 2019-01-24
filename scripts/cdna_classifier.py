@@ -8,6 +8,8 @@ import tqdm
 from pychopper import seq_utils as seu
 from pychopper import chopper
 from pychopper import report
+import pandas as pd
+from collections import OrderedDict
 
 """
 Parse command line arguments.
@@ -30,6 +32,8 @@ parser.add_argument(
     '-r', metavar='report_pdf', type=str, default=None, help="Report PDF.")
 parser.add_argument(
     '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
+parser.add_argument(
+    '-S', metavar='stats_output', type=str, default=None, help="Write statistics to this file.")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
@@ -132,5 +136,13 @@ if __name__ == '__main__':
         plotter.plot_histograms({'nr_hits': unclass_nr_hits}, title="Number of hits in unclassified reads", xlab="Number of hits", ylab="Count")
         plotter.plot_bars_simple({'+': fwd_matches, '-': rev_matches}, title="Strandedness of classified reads", xlab="Strand", ylab="Count")
         plotter.close()
+
+    if args.S is not None:
+        d = OrderedDict()
+        d['+'] = [fwd_matches]
+        d['-'] = [rev_matches]
+        d['unclassified'] = [unclassified]
+        df = pd.DataFrame(d)
+        df.to_csv(args.S, sep="\t", index=False)
 
     pbar.close()
