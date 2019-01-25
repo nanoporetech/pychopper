@@ -34,6 +34,8 @@ parser.add_argument(
     '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
 parser.add_argument(
     '-S', metavar='stats_output', type=str, default=None, help="Write statistics to this file.")
+parser.add_argument(
+    '-A', metavar='scores_output', type=str, default=None, help="Write alignment scores to this file.")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
@@ -94,6 +96,20 @@ if __name__ == '__main__':
     if args.u is not None:
         unclass_handle = open(args.u, "w")
 
+    bcs = list(barcodes.values())[0]
+    bc1_name = bcs[0]['seq'].name
+    bc2_name = bcs[1]['seq'].name
+    SCORE_FIELDS = [bc1_name + "_start_fwd", bc1_name + "_end_fwd", bc2_name + "_start_fwd", bc2_name +
+                    "_end_fwd", bc1_name + "_start_rev", bc1_name + "_end_rev", bc2_name + "_start_rev", bc2_name + "_end_rev", ]
+
+    if args.A is not None:
+        scores_handle = open(args.A, "w")
+        for i, field in enumerate(SCORE_FIELDS):
+            scores_handle.write(field)
+            scores_handle.write("\t")
+        scores_handle.write("Classification\n")
+        scores_handle.write("\n")
+
     unclass_nr_hits = []
     fwd_matches = 0
     rev_matches = 0
@@ -106,12 +122,14 @@ if __name__ == '__main__':
 
     for read in seu.read_seq_records(args.input_fastx, args.i):
         pbar.update(_record_size(read, args.i))
-        match, nr_hits = list(chopper.score_barcode_groups(read, barcodes, args.t, ALIGN_PARAMS).values())[0]
+        match, nr_hits, score_stats = list(chopper.score_barcode_groups(
+            read, barcodes, args.t, ALIGN_PARAMS).values())[0]
         if match is not None:
             if match == 'fwd_match':
                 fwd_matches += 1
             if match == 'rev_match':
                 rev_matches += 1
+        match_dir = match
         read, match = _filter_and_annotate(read, match)
 
         if match is True:
@@ -123,6 +141,13 @@ if __name__ == '__main__':
             if args.u is not None:
                 SeqIO.write(read, unclass_handle, args.i)
 
+        if args.A is not None:
+            for i, field in enumerate(SCORE_FIELDS):
+                scores_handle.write(str(score_stats[field]))
+                scores_handle.write("\t")
+            scores_handle.write(str(match_dir))
+            scores_handle.write("\n")
+
     output_handle.flush()
     output_handle.close()
 
@@ -130,11 +155,18 @@ if __name__ == '__main__':
         unclass_handle.flush()
         unclass_handle.close()
 
+    if args.A is not None:
+        scores_handle.flush()
+        scores_handle.close()
+
     if args.r is not None:
         plotter = report.Report(args.r)
-        plotter.plot_bars_simple({'Classified': fwd_matches + rev_matches, 'Unclassified': unclassified}, title="Basic statistics", ylab="Count")
-        plotter.plot_histograms({'nr_hits': unclass_nr_hits}, title="Number of hits in unclassified reads", xlab="Number of hits", ylab="Count")
-        plotter.plot_bars_simple({'+': fwd_matches, '-': rev_matches}, title="Strandedness of classified reads", xlab="Strand", ylab="Count")
+        plotter.plot_bars_simple({'Classified': fwd_matches + rev_matches,
+                                  'Unclassified': unclassified}, title="Basic statistics", ylab="Count")
+        plotter.plot_histograms({'nr_hits': unclass_nr_hits},
+                                title="Number of hits in unclassified reads", xlab="Number of hits", ylab="Count")
+        plotter.plot_bars_simple({'+': fwd_matches, '-': rev_matches},
+                                 title="Strandedness of classified reads", xlab="Strand", ylab="Count")
         plotter.close()
 
     if args.S is not None:

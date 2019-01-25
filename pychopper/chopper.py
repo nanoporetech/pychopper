@@ -58,7 +58,7 @@ def score_barcode(seq, barcode, aln_params):
     aln = seq_detect.pair_align(
         seq, str(barcode['seq'].seq), params=aln_params)
 
-    return (aln, aln.score >= barcode['score_cutoff'])
+    return (aln, aln.score >= barcode['score_cutoff'], aln.score)
 
 
 def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_params):
@@ -86,38 +86,54 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
 
     target = str(reference)
     sm = np.zeros((4, 2), dtype=bool)
-    aln_start, pass_start = score_barcode(
+    aln_start, pass_start, bc1_start_fwd = score_barcode(
         target[:target_length], bc1, aln_params=aln_params)
-    aln_end, pass_end = score_barcode(
+    aln_end, pass_end, bc1_end_fwd = score_barcode(
         target[-target_length:], bc1, aln_params=aln_params)
     sm[0, 0], sm[0, 1] = pass_start, pass_end
 
-    aln_start, pass_start = score_barcode(
-        target[:target_length], bc2, aln_params=aln_params)
-    aln_end, pass_end = score_barcode(
+    aln_start, pass_start, bc2_start_fwd = score_barcode(
+        target[-target_length:], bc2, aln_params=aln_params)
+    aln_end, pass_end, bc2_end_fwd = score_barcode(
         target[-target_length:], bc2, aln_params=aln_params)
     sm[1, 0], sm[1, 1] = pass_start, pass_end
 
     target = seu.reverse_complement(target)
-    aln_start, pass_start = score_barcode(
+    aln_start, pass_start, bc1_start_rev = score_barcode(
         target[:target_length], bc1, aln_params=aln_params)
-    aln_end, pass_end = score_barcode(
+    aln_end, pass_end, bc1_end_rev = score_barcode(
         target[-target_length:], bc1, aln_params=aln_params)
     sm[2, 0], sm[2, 1] = pass_start, pass_end
 
-    aln_start, pass_start = score_barcode(
+    aln_start, pass_start, bc2_start_rev = score_barcode(
         target[:target_length], bc2, aln_params=aln_params)
-    aln_end, pass_end = score_barcode(
+    aln_end, pass_end, bc2_end_rev = score_barcode(
         target[-target_length:], bc2, aln_params=aln_params)
     sm[3, 0], sm[3, 1] = pass_start, pass_end
 
     nr_hits = np.sum(sm)
+    score_stats = OrderedDict()
+
+    bc1_name = bc1['seq'].name
+    bc2_name = bc2['seq'].name
+
+    score_stats[bc1_name + "_start_fwd"] = bc1_start_fwd
+    score_stats[bc1_name + "_end_fwd"] = bc1_end_fwd
+
+    score_stats[bc2_name + "_start_fwd"] = bc2_start_fwd
+    score_stats[bc2_name + "_end_fwd"] = bc2_end_fwd
+
+    score_stats[bc1_name + "_start_rev"] = bc1_start_rev
+    score_stats[bc1_name + "_end_rev"] = bc1_end_rev
+
+    score_stats[bc2_name + "_start_rev"] = bc2_start_rev
+    score_stats[bc2_name + "_end_rev"] = bc2_end_rev
 
     if np.all(sm == fwd_match):
-        return 'fwd_match', nr_hits
+        return 'fwd_match', nr_hits, score_stats
     if np.all(sm == rev_match):
-        return 'rev_match', nr_hits
-    return None, nr_hits
+        return 'rev_match', nr_hits, score_stats
+    return None, nr_hits, score_stats
 
 
 def score_barcode_groups(reference, barcodes, target_length, aln_params):
