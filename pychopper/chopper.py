@@ -93,7 +93,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     sm[0, 0], sm[0, 1] = pass_start, pass_end
 
     aln_start, pass_start, bc2_start_fwd = score_barcode(
-        target[-target_length:], bc2, aln_params=aln_params)
+        target[:target_length], bc2, aln_params=aln_params)
     aln_end, pass_end, bc2_end_fwd = score_barcode(
         target[-target_length:], bc2, aln_params=aln_params)
     sm[1, 0], sm[1, 1] = pass_start, pass_end
