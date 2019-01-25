@@ -57,10 +57,11 @@ Issue `make help` to get a list of `make` targets.
 usage: cdna_classifier.py [-h] -b primers [-i input_format] [-g aln_params]
                           [-t target_length] [-s score_percentile]
                           [-n sample_size] [-r report_pdf] [-u unclass_output]
+                          [-S stats_output] [-A scores_output]
                           input_fastx output_fastx
 
-Tool to identify full length cDNA reads. Primers have to be specified as they are
-on the forward strand.
+Tool to identify full length cDNA reads. Primers have to be specified as they
+are on the forward strand.
 
 positional arguments:
   input_fastx          Input file.
@@ -68,7 +69,7 @@ positional arguments:
 
 optional arguments:
   -h, --help           show this help message and exit
-  -b primers          Primers fasta.
+  -b primers           Primers fasta.
   -i input_format      Input/output format (fastq).
   -g aln_params        Alignment parameters (match,
                        mismatch,gap_open,gap_extend).
@@ -78,6 +79,9 @@ optional arguments:
                        (100000).
   -r report_pdf        Report PDF.
   -u unclass_output    Write unclassified reads to this file.
+  -S stats_output      Write statistics to this file.
+  -A scores_output     Write alignment scores to this file.
+
 ```
 
 Example usage:
