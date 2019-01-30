@@ -31,19 +31,23 @@ def _seq_record_to_barcode(sr, res):
     return res
 
 
-def calculate_score_cutoffs(barcodes, aln_params, target_length, percentile, nr_samples):
+def calculate_score_cutoffs(barcodes, aln_params, target_length, percentile, nr_samples, heu=False):
     """ Calculate score cutoffs for all barcodes.
     :param barcode: group dictionary.
     :param target_length: Length of target sequence.
     :param percentile: Percentile corresponding to the calculated score cutoff.
     :param nr_samples: Number of samples to take.
+    :param heu: Dummy mode.
     :return: The barcode groups with calculated cutoffs.
     :rtype: OrderedDict
     """
     for group, bcs in barcodes.items():
         for bc in bcs:
-            bc['score_cutoff'] = seq_detect.score_cutoff(
-                str(bc['seq']), aln_params, target_length, percentile, nr_samples)
+            if not heu:
+                bc['score_cutoff'] = seq_detect.score_cutoff(
+                    str(bc['seq']), aln_params, target_length, percentile, nr_samples)
+            else:
+                bc['score_cutoff'] = 0
     return barcodes
 
 
@@ -61,7 +65,16 @@ def score_barcode(seq, barcode, aln_params):
     return (aln, aln.score >= barcode['score_cutoff'], aln.score)
 
 
-def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_params):
+def _heuristic_scoring(bc1_start_fwd, bc1_end_fwd, bc2_start_fwd, bc2_end_fwd, bc1_start_rev, bc1_end_rev, bc2_start_rev, bc2_end_rev):
+    """ Use heuristic scoring to determine read orientation. """
+    if (bc1_start_fwd > max(bc1_end_fwd, bc1_start_rev, bc1_end_rev)) and (bc2_end_fwd > max(bc2_start_fwd, bc2_start_rev, bc2_end_rev)):
+        return 'fwd_match'
+    if (bc1_start_rev > max(bc1_start_fwd, bc1_end_fwd, bc1_end_rev)) and (bc2_end_rev > max(bc2_start_fwd, bc2_end_fwd, bc2_start_rev)):
+        return 'rev_match'
+    return None
+
+
+def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_params, heu=False):
     """ Score barcode group against target sequence and its reverse complement. Only unambigous matches
     are scored as good.
 
@@ -69,6 +82,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     :param target_length: Length of sequence to consider at each end.
     :param barcode_group: A barcode group with two barcodes.
     :param aln_params: Alignment parameters.
+    :param heu: Use heuristic scoring.
     :return: 'fwd_match' for forward match, 'rev_match' for reverese match and None for no match.
     :rtype: str or None.
     """
@@ -93,7 +107,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     sm[0, 0], sm[0, 1] = pass_start, pass_end
 
     aln_start, pass_start, bc2_start_fwd = score_barcode(
-        target[-target_length:], bc2, aln_params=aln_params)
+        target[:target_length], bc2, aln_params=aln_params)
     aln_end, pass_end, bc2_end_fwd = score_barcode(
         target[-target_length:], bc2, aln_params=aln_params)
     sm[1, 0], sm[1, 1] = pass_start, pass_end
@@ -129,6 +143,11 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     score_stats[bc2_name + "_start_rev"] = bc2_start_rev
     score_stats[bc2_name + "_end_rev"] = bc2_end_rev
 
+    if heu:
+        match = _heuristic_scoring(bc1_start_fwd, bc1_end_fwd, bc2_start_fwd,
+                                   bc2_end_fwd, bc1_start_rev, bc1_end_rev, bc2_start_rev, bc2_end_rev)
+        return match, nr_hits, score_stats
+
     if np.all(sm == fwd_match):
         return 'fwd_match', nr_hits, score_stats
     if np.all(sm == rev_match):
@@ -136,18 +155,19 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     return None, nr_hits, score_stats
 
 
-def score_barcode_groups(reference, barcodes, target_length, aln_params):
+def score_barcode_groups(reference, barcodes, target_length, aln_params, heu=False):
     """ Score multiple barcode groups.
 
     :param reference: Target sequence.
     :param barcodes: A barcode groups.
     :param target_length: Length of sequence to consider at each end.
     :param aln_params: Alignment parameters.
+    :param heu: Use heuristic scoring.
     :return: An ordered dictionary of results.
     :rtype: OrderedDict.
     """
     res = OrderedDict()
     for bc_group, barcodes in barcodes.items():
         res[bc_group] = score_barcode_group(
-            reference.seq, target_length, bc_group, barcodes, aln_params)
+            reference.seq, target_length, bc_group, barcodes, aln_params, heu)
     return res

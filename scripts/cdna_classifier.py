@@ -36,6 +36,8 @@ parser.add_argument(
     '-S', metavar='stats_output', type=str, default=None, help="Write statistics to this file.")
 parser.add_argument(
     '-A', metavar='scores_output', type=str, default=None, help="Write alignment scores to this file.")
+parser.add_argument('-x', action="store_true",
+                    help="Use more sensitive (and error prone) heuristic mode (False).", default=False)
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
@@ -90,7 +92,7 @@ if __name__ == '__main__':
 
     barcodes = chopper.load_barcodes(args.b)
     barcodes = chopper.calculate_score_cutoffs(
-        barcodes, aln_params=ALIGN_PARAMS, target_length=args.t, percentile=args.s, nr_samples=args.n)
+        barcodes, aln_params=ALIGN_PARAMS, target_length=args.t, percentile=args.s, nr_samples=args.n, heu=args.x)
 
     output_handle = open(args.output_fastx, "w")
     if args.u is not None:
@@ -123,7 +125,7 @@ if __name__ == '__main__':
     for read in seu.read_seq_records(args.input_fastx, args.i):
         pbar.update(_record_size(read, args.i))
         match, nr_hits, score_stats = list(chopper.score_barcode_groups(
-            read, barcodes, args.t, ALIGN_PARAMS).values())[0]
+            read, barcodes, args.t, ALIGN_PARAMS, heu=args.x).values())[0]
         if match is not None:
             if match == 'fwd_match':
                 fwd_matches += 1
