@@ -57,7 +57,7 @@ Issue `make help` to get a list of `make` targets.
 usage: cdna_classifier.py [-h] -b primers [-i input_format] [-g aln_params]
                           [-t target_length] [-s score_percentile]
                           [-n sample_size] [-r report_pdf] [-u unclass_output]
-                          [-S stats_output] [-A scores_output]
+                          [-S stats_output] [-A scores_output] [-x]
                           input_fastx output_fastx
 
 Tool to identify full length cDNA reads. Primers have to be specified as they
@@ -81,6 +81,8 @@ optional arguments:
   -u unclass_output    Write unclassified reads to this file.
   -S stats_output      Write statistics to this file.
   -A scores_output     Write alignment scores to this file.
+  -x                   Use more sensitive (and error prone) heuristic mode
+                       (False).
 
 ```
 
@@ -89,6 +91,13 @@ Example usage:
 ```bash
 cdna_classifier.py -b cdna_barcodes.fas -r report.pdf -u unclassified.fq input.fq full_length_output.fq
 ```
+
+Example usage in heuristic mode which is more sensitive (and more error prone):
+
+```bash
+cdna_classifier.py -x -b cdna_barcodes.fas -r report.pdf -u unclassified.fq input.fq full_length_output.fq
+```
+
 
 The primers have to specified as they are on the forward strand (see `data/cdna_barcodes.fas` for an example).
 The score cutoffs for each primer are calculated by aligning them against random sequences and taking the `-s` percentile of the score distribution (98 by default).
