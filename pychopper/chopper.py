@@ -65,16 +65,17 @@ def score_barcode(seq, barcode, aln_params):
     return (aln, aln.score >= barcode['score_cutoff'], aln.score)
 
 
-def _heuristic_scoring(bc1_start_fwd, bc1_end_fwd, bc2_start_fwd, bc2_end_fwd, bc1_start_rev, bc1_end_rev, bc2_start_rev, bc2_end_rev):
+def _heuristic_scoring(bc1_start_fwd, bc1_end_fwd, bc2_start_fwd, bc2_end_fwd, bc1_start_rev, bc1_end_rev, bc2_start_rev, bc2_end_rev, limit):
     """ Use heuristic scoring to determine read orientation. """
-    if (bc1_start_fwd > max(bc1_end_fwd, bc1_start_rev, bc1_end_rev)) and (bc2_end_fwd > max(bc2_start_fwd, bc2_start_rev, bc2_end_rev)):
+    limit = 0.25
+    if ((bc1_start_fwd - max(bc1_end_fwd, bc1_start_rev, bc1_end_rev)) / bc1_start_fwd >= limit) and ((bc2_end_fwd - max(bc2_start_fwd, bc2_start_rev, bc2_end_rev)) / bc2_end_fwd >= limit):
         return 'fwd_match'
-    if (bc1_start_rev > max(bc1_start_fwd, bc1_end_fwd, bc1_end_rev)) and (bc2_end_rev > max(bc2_start_fwd, bc2_end_fwd, bc2_start_rev)):
+    if ((bc1_start_rev - max(bc1_start_fwd, bc1_end_fwd, bc1_end_rev)) / bc1_start_rev >= limit) and ((bc2_end_rev - max(bc2_start_fwd, bc2_end_fwd, bc2_start_rev)) / bc2_end_rev >= limit):
         return 'rev_match'
     return None
 
 
-def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_params, heu=False):
+def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_params, heu=False, heu_limit=None):
     """ Score barcode group against target sequence and its reverse complement. Only unambigous matches
     are scored as good.
 
@@ -83,6 +84,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     :param barcode_group: A barcode group with two barcodes.
     :param aln_params: Alignment parameters.
     :param heu: Use heuristic scoring.
+    :param heu_limit: Heuristic scoring stringency.
     :return: 'fwd_match' for forward match, 'rev_match' for reverese match and None for no match.
     :rtype: str or None.
     """
@@ -145,7 +147,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
 
     if heu:
         match = _heuristic_scoring(bc1_start_fwd, bc1_end_fwd, bc2_start_fwd,
-                                   bc2_end_fwd, bc1_start_rev, bc1_end_rev, bc2_start_rev, bc2_end_rev)
+                                   bc2_end_fwd, bc1_start_rev, bc1_end_rev, bc2_start_rev, bc2_end_rev, heu_limit)
         return match, nr_hits, score_stats
 
     if np.all(sm == fwd_match):
@@ -155,7 +157,7 @@ def score_barcode_group(reference, target_length, barcode_group, barcodes, aln_p
     return None, nr_hits, score_stats
 
 
-def score_barcode_groups(reference, barcodes, target_length, aln_params, heu=False):
+def score_barcode_groups(reference, barcodes, target_length, aln_params, heu=False, heu_limit=None):
     """ Score multiple barcode groups.
 
     :param reference: Target sequence.
@@ -163,11 +165,12 @@ def score_barcode_groups(reference, barcodes, target_length, aln_params, heu=Fal
     :param target_length: Length of sequence to consider at each end.
     :param aln_params: Alignment parameters.
     :param heu: Use heuristic scoring.
+    :param heu_limit: Heuristic scoring stringency.
     :return: An ordered dictionary of results.
     :rtype: OrderedDict.
     """
     res = OrderedDict()
     for bc_group, barcodes in barcodes.items():
         res[bc_group] = score_barcode_group(
-            reference.seq, target_length, bc_group, barcodes, aln_params, heu)
+            reference.seq, target_length, bc_group, barcodes, aln_params, heu, heu_limit)
     return res

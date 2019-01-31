@@ -32,6 +32,7 @@ def pair_align(reference, query, params=DEFAULT_ALIGN_PARAMS):
 
     subs_mat = parasail.matrix_create("ACGT", params['match'], params['mismatch'])
     aln = parasail.sw_striped_32(reference, query, params['gap_open'], params['gap_extend'], subs_mat)
+    # aln = parasail.sg_striped_32(reference, query, params['gap_open'], params['gap_extend'], subs_mat)
 
     return aln
 
