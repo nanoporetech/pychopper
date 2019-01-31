@@ -58,6 +58,7 @@ usage: cdna_classifier.py [-h] -b primers [-i input_format] [-g aln_params]
                           [-t target_length] [-s score_percentile]
                           [-n sample_size] [-r report_pdf] [-u unclass_output]
                           [-S stats_output] [-A scores_output] [-x]
+                          [-l heu_stringency]
                           input_fastx output_fastx
 
 Tool to identify full length cDNA reads. Primers have to be specified as they
@@ -83,6 +84,7 @@ optional arguments:
   -A scores_output     Write alignment scores to this file.
   -x                   Use more sensitive (and error prone) heuristic mode
                        (False).
+  -l heu_stringency    Stringency in heuristic mode (0.25).
 
 ```
 
