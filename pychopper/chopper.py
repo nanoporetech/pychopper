@@ -67,7 +67,6 @@ def score_barcode(seq, barcode, aln_params):
 
 def _heuristic_scoring(bc1_start_fwd, bc1_end_fwd, bc2_start_fwd, bc2_end_fwd, bc1_start_rev, bc1_end_rev, bc2_start_rev, bc2_end_rev, limit):
     """ Use heuristic scoring to determine read orientation. """
-    limit = 0.25
     if ((bc1_start_fwd - max(bc1_end_fwd, bc1_start_rev, bc1_end_rev)) / bc1_start_fwd >= limit) and ((bc2_end_fwd - max(bc2_start_fwd, bc2_start_rev, bc2_end_rev)) / bc2_end_fwd >= limit):
         return 'fwd_match'
     if ((bc1_start_rev - max(bc1_start_fwd, bc1_end_fwd, bc1_end_rev)) / bc1_start_rev >= limit) and ((bc2_end_rev - max(bc2_start_fwd, bc2_end_fwd, bc2_start_rev)) / bc2_end_rev >= limit):
