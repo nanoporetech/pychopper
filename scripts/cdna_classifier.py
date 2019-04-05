@@ -169,8 +169,9 @@ if __name__ == '__main__':
         plotter = report.Report(args.r)
         plotter.plot_bars_simple({'Classified': fwd_matches + rev_matches,
                                   'Unclassified': unclassified}, title="Basic statistics", ylab="Count")
-        plotter.plot_histograms({'nr_hits': unclass_nr_hits},
-                                title="Number of hits in unclassified reads", xlab="Number of hits", ylab="Count")
+        if not args.x:
+            plotter.plot_histograms({'nr_hits': unclass_nr_hits},
+                                    title="Number of hits in unclassified reads", xlab="Number of hits", ylab="Count")
         plotter.plot_bars_simple({'+': fwd_matches, '-': rev_matches},
                                  title="Strandedness of classified reads", xlab="Strand", ylab="Count")
         plotter.close()
