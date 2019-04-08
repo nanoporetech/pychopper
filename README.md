@@ -85,7 +85,6 @@ optional arguments:
   -x                   Use more sensitive (and error prone) heuristic mode
                        (False).
   -l heu_stringency    Stringency in heuristic mode (0.25).
-  -T nr_cores          Number of cores to use (4).
 ```
 
 Example usage:
