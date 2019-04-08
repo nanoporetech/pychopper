@@ -40,8 +40,6 @@ parser.add_argument('-x', action="store_true",
                     help="Use more sensitive (and error prone) heuristic mode (False).", default=False)
 parser.add_argument(
     '-l', metavar='heu_stringency', type=float, default=0.25, help="Stringency in heuristic mode (0.25).")
-parser.add_argument(
-    '-T', metavar='nr_cores', type=int, default=4, help="Number of cores to use (4).", choices=range(4,10000))
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
