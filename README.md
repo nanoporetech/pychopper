@@ -4,6 +4,7 @@
 
 Pychopper
 =========
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/pychopper/README.html)
 
 A tool to identify full length cDNA reads. Primers have to be specified as they are
 on the forward strand.
