@@ -1,0 +1,7 @@
+parasail
+biopython
+matplotlib
+six
+tqdm
+pandas
+pytest
