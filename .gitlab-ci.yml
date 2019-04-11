@@ -23,15 +23,3 @@ do_testing:
   except:
     - tags
     
-pages:
-  stage: pages
-  script: 
-    - make docs
-    - mv docs/_build/html public
-  artifacts:
-    paths:
-    - public/
-  only:
-    - master
-  except:
-    - tags
