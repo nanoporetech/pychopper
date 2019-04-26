@@ -108,6 +108,7 @@ if __name__ == '__main__':
 
     if args.A is not None:
         scores_handle = open(args.A, "w")
+        scores_handle.write("Read\t")
         for i, field in enumerate(SCORE_FIELDS):
             scores_handle.write(field)
             scores_handle.write("\t")
@@ -146,6 +147,8 @@ if __name__ == '__main__':
                 SeqIO.write(read, unclass_handle, args.i)
 
         if args.A is not None:
+            scores_handle.write(read.id)
+            scores_handle.write("\t")
             for i, field in enumerate(SCORE_FIELDS):
                 scores_handle.write(str(score_stats[field]))
                 scores_handle.write("\t")
