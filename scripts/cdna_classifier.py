@@ -55,7 +55,7 @@ def _filter_and_annotate(read, match):
     """ Filter sequences by match and annotate with direction. """
     if match is not None:
         direction = '+' if match == 'fwd_match' else '-'
-        read.id = read.id + "|" + direction
+        read.description = read.description + " strand=" + direction
         if match == 'rev_match':
             read = _revcomp_seq(read)
         return read, True
