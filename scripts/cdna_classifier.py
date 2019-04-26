@@ -63,6 +63,14 @@ def _filter_and_annotate(read, match):
         return read, False
 
 
+def _get_runid(desc):
+    """ Parse out runid from sequence description. """
+    tmp = [t for t in desc.split(" ") if t.startswith("runid")]
+    if len(tmp) != 1:
+        return "NA"
+    return tmp[0].rsplit("=", 1)[1]
+
+
 def _parse_aln_params(pstr):
     """ Parse alignment parameters. """
     res = {}
@@ -108,12 +116,12 @@ if __name__ == '__main__':
 
     if args.A is not None:
         scores_handle = open(args.A, "w")
+        scores_handle.write("Run\t")
         scores_handle.write("Read\t")
         for i, field in enumerate(SCORE_FIELDS):
             scores_handle.write(field)
             scores_handle.write("\t")
         scores_handle.write("Classification\n")
-        scores_handle.write("\n")
 
     unclass_nr_hits = []
     fwd_matches = 0
@@ -147,6 +155,8 @@ if __name__ == '__main__':
                 SeqIO.write(read, unclass_handle, args.i)
 
         if args.A is not None:
+            scores_handle.write(_get_runid(read.description))
+            scores_handle.write("\t")
             scores_handle.write(read.id)
             scores_handle.write("\t")
             for i, field in enumerate(SCORE_FIELDS):
