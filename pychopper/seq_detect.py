@@ -21,6 +21,27 @@ def random_seq(length):
     return ''.join([BASES[b] for b in np.random.random_integers(0, len(BASES) - 1, size=length)])
 
 
+def create_matrix(match, mismatch, nmatch):
+    """
+    Create new parasail scoring matrix. 'N' is used as wildcard character
+    for barcodes and has its own match parameter (0 per default).
+    'X' is used as wildcard character for modified bp as in the 16S
+    sequencing adapter. Taken from qcat.
+
+    :return: parasail matrix
+    """
+    matrix = parasail.matrix_create("ATGCNX", match, mismatch)
+
+    pointers = [4, 11, 18, 25, 28, 29, 30, 31, 32]
+    for i in pointers:
+        matrix.pointer[0].matrix[i] = nmatch
+
+    pointers = [5, 12, 19, 26, 33, 35, 36, 37, 38, 39, 40]
+    for i in pointers:
+        matrix.pointer[0].matrix[i] = 0
+    return matrix
+
+
 def pair_align(reference, query, params=DEFAULT_ALIGN_PARAMS):
     """ Perform pairwise local alignment using scikit-bio.
     :param reference: Reference sequence.
@@ -30,7 +51,7 @@ def pair_align(reference, query, params=DEFAULT_ALIGN_PARAMS):
     :rtype: list of tuples
     """
 
-    subs_mat = parasail.matrix_create("ACGT", params['match'], params['mismatch'])
+    subs_mat = create_matrix(params['match'], params['mismatch'], 0)
     aln = parasail.sw_striped_32(reference, query, params['gap_open'], params['gap_extend'], subs_mat)
     # aln = parasail.sg_striped_32(reference, query, params['gap_open'], params['gap_extend'], subs_mat)
 
