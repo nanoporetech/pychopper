@@ -43,6 +43,12 @@ class Report:
         self.pages.savefig(fig)
         plt.close(fig)
 
+    def save_close(self):
+        """Utility method to save and close figure."""
+        self.pages.savefig()
+        plt.close()
+        plt.clf()
+
     def plot_arrays(self, data_map, title="", xlab="", ylab="", marker='.', legend_loc='best', legend=True, vlines=None, vlcolor='green', vlwitdh=0.5):
         """Plot multiple pairs of data arrays.
 

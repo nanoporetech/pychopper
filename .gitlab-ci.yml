@@ -10,16 +10,16 @@ before_script:
     - apt-get install -y software-properties-common
     - apt-add-repository universe
     - apt-get update
-    - apt-get install -y python-pip make python-numpy python-matplotlib python-biopython python-pandas mummer last-align
-    - pip install --upgrade pip sphinx sphinx-argparse sphinx_rtd_theme pytest pycmd futures packaging appdirs pysam
-    - hash -r pip
-    - pip install -e ./
+    - apt-get install -y python3 python3-pip make python3-numpy python3-matplotlib hmmer 
+    - alias python=python3; pip3 install --upgrade pip sphinx sphinx-argparse sphinx_rtd_theme pytest pandas
+    - hash -r pip3
+    - alias python=python3; pip3 install -e ./
 
   
 do_testing:
   stage: test
   script:
-    - make test
+    - alias python=python3; make test
   except:
     - tags
     

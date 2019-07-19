@@ -8,13 +8,15 @@ with open('README.md') as readme_file:
     readme = readme_file.read()
 
 requirements = [
+    'edlib',
     'parasail',
-    'biopython',
     'matplotlib',
-    'six',
     'tqdm',
+    'six',
     'pandas',
-    'pytest'
+    'pytest',
+    'sphinx',
+    'sphinx_rtd_theme',
 ]
 
 test_requirements = [
@@ -23,8 +25,8 @@ test_requirements = [
 
 setup(
     name='pychopper',
-    version='1.0.0',
-    description="TODO.",
+    version='2.0.0',
+    description="A tool to identify full length cDNA reads.",
     long_description=readme,
     author="ONT Applications Group",
     author_email='Apps@nanoporetech.com',

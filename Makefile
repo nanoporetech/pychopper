@@ -70,6 +70,3 @@ install: clean ## install the package to the active Python's site-packages
 
 com: ## commit all changes to git
 	git commit -a
-
-it: ## integration test
-	./scripts/cdna_classifier.py -s 95 -i fasta -b pychopper/tests/data/barcodes.fas pychopper/tests/data/ref.fas pychopper/tests/data/test_output.fas

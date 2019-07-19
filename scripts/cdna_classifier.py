@@ -2,197 +2,327 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-from Bio import SeqIO
 import os
-import tqdm
-from pychopper import seq_utils as seu
-from pychopper import chopper
-from pychopper import report
+import sys
+import numpy as np
 import pandas as pd
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+import concurrent.futures
+import tqdm
+
+from pychopper import seq_utils as seu
+from pychopper import utils
+from pychopper import phmm_data, primer_data
+from pychopper import chopper, report
+
 
 """
 Parse command line arguments.
 """
 parser = argparse.ArgumentParser(
-    description='Tool to identify full length cDNA reads. Primers have to be specified as they are on the forward strand.')
+    description='Tool to identify, orient and rescue full-length cDNA reads.')
 parser.add_argument(
-    '-b', metavar='primers', type=str, default=None, help="Primers fasta.", required=True)
+    '-b', metavar='primers', type=str, default=None, help="Primers fasta.", required=False)
 parser.add_argument(
-    '-i', metavar='input_format', type=str, default='fastq', help="Input/output format (fastq).")
-parser.add_argument('-g', metavar='aln_params', type=str,
-                    help="Alignment parameters (match, mismatch,gap_open,gap_extend).", default="1,-1,2,1")
+    '-g', metavar='phmm_file', type=str, default=None, help="File with custom profile HMMs (None).", required=False)
 parser.add_argument(
-    '-t', metavar='target_length', type=int, default=200, help="Number of bases to scan at each end (200).")
+    '-c', metavar='config_file', type=str, default=None, help="File to specify primer configurations for each direction (None).")
 parser.add_argument(
-    '-s', metavar='score_percentile', type=float, default=98, help="Score cutoff percentile (98).")
+    '-q', metavar='cutoff', type=float, default=None, help="Cutoff parameter (autotuned).")
 parser.add_argument(
-    '-n', metavar='sample_size', type=int, default=100000, help="Number of samples when calculating score cutoff (100000).")
-parser.add_argument(
-    '-r', metavar='report_pdf', type=str, default=None, help="Report PDF.")
+    '-r', metavar='report_pdf', type=str, default="cdna_classifier_report.pdf", help="Report PDF (cdna_classifier_report.pdf).")
 parser.add_argument(
     '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
 parser.add_argument(
+    '-w', metavar='rescue_output', type=str, default=None, help="Write rescued reads to this file.")
+parser.add_argument(
     '-S', metavar='stats_output', type=str, default=None, help="Write statistics to this file.")
 parser.add_argument(
-    '-A', metavar='scores_output', type=str, default=None, help="Write alignment scores to this file.")
-parser.add_argument('-x', action="store_true",
-                    help="Use more sensitive (and error prone) heuristic mode (False).", default=False)
+    '-Y', metavar='autotune_nr', type=float, default=10000, help="Approximate number of reads used for tuning the cutoff parameter (10000).")
 parser.add_argument(
-    '-l', metavar='heu_stringency', type=float, default=0.25, help="Stringency in heuristic mode (0.25).")
+    '-L', metavar='autotune_samples', type=int, default=30, help="Number of samples taken when tuning cutoff parameter (30).")
+parser.add_argument(
+    '-A', metavar='scores_output', type=str, default=None, help="Write alignment scores to this BED file.")
+parser.add_argument(
+    '-m', metavar='method', type=str, default="phmm", help="Detection method: phmm or edlib (phmm).")
+parser.add_argument(
+    '-x', metavar='rescue', type=str, default=None, help="Protocol-specific read rescue: DCS109 (None).")
+parser.add_argument(
+    '-p', action='store_true', default=False, help="Keep primers, but trim the rest.")
+parser.add_argument(
+    '-t', metavar='threads', type=int, default=8, help="Number of threads to use (8).")
+parser.add_argument(
+    '-B', metavar='batch_size', type=int, default=1000000, help="Maximum number of reads processed in each batch (1000000).")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
 
-def _revcomp_seq(read):
-    """ Reverse complement sequence and fix Id. """
-    rev_read = read.reverse_complement()
-    rev_read.id, rev_read.description = read.id, read.description
-    return rev_read
+def _new_stats():
+    "Initialize a new statistic dictionary"
+    st = OrderedDict()
+    st["Classification"] = OrderedDict([('Classified', 0), ('Rescue', 0), ('Unclassified', 0)])
+    st["Strand"] = OrderedDict([('+', 0), ('-', 0)])
+    st["RescueStrand"] = OrderedDict([('+', 0), ('-', 0)])
+    st["RescueSegmentNr"] = defaultdict(int)
+    st["RescueHitNr"] = defaultdict(int)
+    st["UnclassHitNr"] = defaultdict(int)
+    st["Unusable"] = defaultdict(int)
+    return st
 
 
-def _filter_and_annotate(read, match):
-    """ Filter sequences by match and annotate with direction. """
-    if match is not None:
-        direction = '+' if match == 'fwd_match' else '-'
-        read.description = read.description + " strand=" + direction
-        if match == 'rev_match':
-            read = _revcomp_seq(read)
-        return read, True
+def _update_stats(st, segments, hits, usable_len, read):
+    "Update stats dictionary with properties of a read"
+    if len(segments) == 0:
+        st["Classification"]["Unclassified"] += 1
+        st["UnclassHitNr"][len(hits)] += 1
+    elif len(segments) == 1:
+        st["Classification"]["Classified"] += 1
+        st["Strand"][segments[0].Strand] += 1
+        st["Unusable"][int(segments[0].Len / len(read.Seq) * 100)] += 1
     else:
-        return read, False
+        for rs in segments:
+            st["Classification"]["Rescue"] += 1
+            st["RescueStrand"][rs.Strand] += 1
+            st["RescueHitNr"][len(hits)] += 1
+        st["Unusable"][len(read.Seq) - int(sum([s.Len for s in segments]))] += 1
+        st["RescueSegmentNr"][len(segments)] += 1
 
 
-def _get_runid(desc):
-    """ Parse out runid from sequence description. """
-    tmp = [t for t in desc.split(" ") if t.startswith("runid")]
-    if len(tmp) != 1:
-        return "NA"
-    return tmp[0].rsplit("=", 1)[1]
-
-
-def _parse_aln_params(pstr):
-    """ Parse alignment parameters. """
-    res = {}
-    tmp = [int(x) for x in pstr.split(',')]
-    res['match'] = tmp[0]
-    res['mismatch'] = tmp[1]
-    res['gap_open'] = tmp[2]
-    res['gap_extend'] = tmp[3]
+def _process_stats(st):
+    "Convert stats dictionary into a data frame"
+    res = OrderedDict([("Category", []), ("Name", []), ("Value", [])])
+    for k, v in st['Classification'].items():
+        res["Category"] += ["Classification"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    for k, v in st['Strand'].items():
+        res["Category"] += ["Strand"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    for k, v in st['RescueStrand'].items():
+        res["Category"] += ["RescueStrand"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    for k, v in sorted(st['UnclassHitNr'].items(), key=lambda x: x[0]):
+        res["Category"] += ["UnclassHitNr"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    for k, v in sorted(st['RescueHitNr'].items(), key=lambda x: x[0]):
+        res["Category"] += ["RescueHitNr"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    for k, v in sorted(st['RescueSegmentNr'].items(), key=lambda x: x[0]):
+        res["Category"] += ["RescueSegmentNr"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    for k, v in sorted(st['Unusable'].items(), key=lambda x: x[0]):
+        res["Category"] += ["Unusable"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    res = pd.DataFrame(res)
     return res
 
 
-def _record_size(read, in_format):
-    """ Calculate record size. """
-    dl = len(read.description)
-    sl = len(read.seq)
-    if in_format == 'fastq':
-        bl = dl + 2 * sl + 6
-    elif in_format == 'fasta':
-        bl = dl + sl + 3
-    else:
-        raise Exception("Unkonwn format!")
-    return bl
+def _plot_pd_bars(df, title, report, alpha=0.7, xrot=0, ann=False):
+    "Generate bar plot from data frame"
+    df = df.drop("Category", axis=1)
+    df = df.set_index("Name")
+    report.plt.clf()
+    if sum(df.Value) > 0:
+        ax = df.plot(kind='bar', align='center', alpha=alpha, rot=xrot)
+        report.plt.title(title)
+        if ann:
+            y_offset = 1
+            for rect in ax.patches:
+                height = rect.get_height()
+                ax.text(rect.get_x() + rect.get_width() / 2., height + y_offset, "{:.0f}".format(height), ha='center', va='bottom', rotation=0)
+                ax.text(rect.get_x() + rect.get_width() / 2., 0.5 * height - 2 * y_offset, "{:.1f}%".format(100 * height / sum(df.Value)), ha='center', va='bottom', rotation=0)
+        report.save_close()
+
+
+def _plot_pd_line(df, title, report, alpha=0.7, xrot=0, vline=None):
+    "Generate line plot from a data frame"
+    df = df.drop("Category", axis=1)
+    df = df.set_index("Name")
+    report.plt.clf()
+    if sum(df.Value) > 0:
+        df.plot(kind='line', rot=xrot)
+        if vline is not None:
+            report.plt.axvline(x=vline, color="red")
+        report.plt.title(title)
+        report.save_close()
+
+
+def _plot_stats(st, pdf):
+    "Generate plots and save to report PDF"
+    R = report.Report(pdf)
+    _plot_pd_bars(st.loc[st.Category == "Classification", ].copy(), "Classification of output reads", R, ann=True)
+    _plot_pd_bars(st.loc[st.Category == "Strand", ].copy(), "Strand of oriented reads", R, ann=True)
+    _plot_pd_bars(st.loc[st.Category == "RescueStrand", ].copy(), "Strand of rescued reads", R, ann=True)
+    _plot_pd_bars(st.loc[st.Category == "UnclassHitNr", ].copy(), "Number of hits in unclassified reads", R)
+    _plot_pd_bars(st.loc[st.Category == "RescueHitNr", ].copy(), "Number of hits in rescued reads", R)
+    _plot_pd_bars(st.loc[st.Category == "RescueSegmentNr", ].copy(), "Number of usable segments per rescued read", R)
+    if args.Y > 0:
+        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Classified reads as function of cutoff(q). Best q={:.4f}".format(args.q), R, vline=args.q)
+    udf = st.loc[st.Category == "Unusable", ].copy()
+    udf.Name = np.log10(1.0 + np.array(udf.Name, dtype=float))
+    _plot_pd_line(udf, "Log10 length distribution of trimmed away sequences.", R)
+    R.close()
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    ALIGN_PARAMS = _parse_aln_params(args.g)
+    if args.m == "phmm":
+        utils.check_command("nhmmscan -h > /dev/null")
 
-    barcodes = chopper.load_barcodes(args.b)
-    barcodes = chopper.calculate_score_cutoffs(
-        barcodes, aln_params=ALIGN_PARAMS, target_length=args.t, percentile=args.s, nr_samples=args.n, heu=args.x)
+    CONFIG = "+:SSP,-VNP|-:VNP,-SSP"
+    if args.c is not None:
+        CONFIG = open(args.c, "r").readline().strip()
 
-    output_handle = open(args.output_fastx, "w")
+    if args.g is None:
+        args.g = os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm")
+
+    if args.b is None:
+        args.b = os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas")
+
+    if args.x is not None and args.x in ('DCS109'):
+        if args.x == "DCS109":
+            CONFIG = "-:VNP,-VNP"
+
+    config = utils.parse_config_string(CONFIG)
+    sys.stderr.write("Configurations to consider: \"{}\"\n".format(CONFIG))
+
+    in_fh = sys.stdin
+    if args.input_fastx != '-':
+        in_fh = open(args.input_fastx, "r")
+
+    out_fh = sys.stdout
+    if args.output_fastx != '-':
+        out_fh = open(args.output_fastx, "w")
+
+    u_fh = None
     if args.u is not None:
-        unclass_handle = open(args.u, "w")
+        u_fh = open(args.u, "w")
 
-    bcs = list(barcodes.values())[0]
-    bc1_name = bcs[0]['seq'].name
-    bc2_name = bcs[1]['seq'].name
-    SCORE_FIELDS = [bc1_name + "_start_fwd", bc1_name + "_end_fwd", bc2_name + "_start_fwd", bc2_name +
-                    "_end_fwd", bc1_name + "_start_rev", bc1_name + "_end_rev", bc2_name + "_start_rev", bc2_name + "_end_rev", ]
+    w_fh = None
+    if args.w is not None:
+        w_fh = open(args.w, "w")
 
+    a_fh = None
     if args.A is not None:
-        scores_handle = open(args.A, "w")
-        scores_handle.write("Run\t")
-        scores_handle.write("Read\t")
-        for i, field in enumerate(SCORE_FIELDS):
-            scores_handle.write(field)
-            scores_handle.write("\t")
-        scores_handle.write("Classification\n")
+        a_fh = open(args.A, "w")
 
-    unclass_nr_hits = []
-    fwd_matches = 0
-    rev_matches = 0
-    unclassified = 0
+    st = _new_stats()
+    input_size = None
+    if args.input_fastx != "-":
+        input_size = os.stat(args.input_fastx).st_size
 
-    # Get the size of input file:
-    input_size = os.stat(args.input_fastx).st_size
+    if args.q is None and args.Y <= 0:
+        sys.stderr.write("Please specifiy either -q or -Y!")
 
+    if args.m == "edlib":
+        all_primers = seu.get_primers(args.b)
+
+    if args.m == "phmm":
+        def backend(x, pool, q=None, mb=None):
+            return chopper.chopper_phmm(x, args.g, config, q, args.t, pool, mb)
+    elif args.m == "edlib":
+        def backend(x, pool, q=None, mb=None):
+            return chopper.chopper_edlib(x, all_primers, config, q * 1.2, q, pool, mb)
+    else:
+        raise Exception("Invalid backend!")
+
+    # Pick the -q maximizing the number of classified reads using frid search:
+    nr_records = None
+    tune_df = None
+    if args.Y > 0:
+        nr_cutoffs = args.L
+        cutoffs = np.linspace(0.0, 1.0, num=nr_cutoffs)
+        cutoffs = cutoffs / cutoffs[-1]
+        if args.m == "phmm":
+            cutoffs = np.linspace(10**-5, 5.0, num=nr_cutoffs)
+        class_reads = []
+        nr_records = utils.count_fastq_records(args.input_fastx)
+        opt_batch = int(nr_records / args.t)
+        if opt_batch < args.B:
+            args.B = opt_batch
+        target_prop = 1.0
+        if nr_records > args.Y:
+            target_prop = args.Y / float(nr_records)
+        if target_prop > 1.0:
+            target_prop = 1.0
+        sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
+        read_sample = list(seu.readfq(open(args.input_fastx, "r"), sample=target_prop))
+        sys.stderr.write("Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%).\n".format(len(read_sample), target_prop * 100.0))
+        sys.stderr.write("Optimizing over {} cutoff values.\n".format(args.L))
+        for qv in tqdm.tqdm(cutoffs):
+            cls = 0
+            with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
+                for batch in utils.batch(read_sample, int((len(read_sample)))):
+                    for read, (segments, hits, usable_len) in backend(batch, executor, qv, max(1000, int((len(read_sample)) / args.t))):
+                        flt = list([x for x in segments if x.Len > 0])
+                        cls += len(flt)
+            class_reads.append(cls)
+        best_qi = np.argmax(class_reads)
+        args.q = cutoffs[best_qi]
+        tune_df = OrderedDict([("Category", []), ("Name", []), ("Value", [])])
+        for i, c in enumerate(cutoffs):
+            tune_df["Category"] += ["AutotuneSample"]
+            tune_df["Name"] += [c]
+            tune_df["Value"] += [class_reads[i]]
+
+        tune_df["Category"] += ["Parameter"]
+        tune_df["Name"] += ["Cutoff(q)"]
+        tune_df["Value"] += [args.q]
+        if best_qi == (len(class_reads) - 1):
+            sys.stderr.write("Best cuttoff value is at the edge of the search interval! Using tuned value is not safe! Please pick a q value manually and QC your data!\n")
+        sys.stderr.write("Best cutoff (q) value is {:.4f} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
+
+    if nr_records is not None:
+        input_size = nr_records
+        if args.B > nr_records:
+            args.B = nr_records
+        if args.B == 0:
+            args.B = 1
+    sys.stderr.write("Processing the whole dataset using a batch size of {}:\n".format(args.B))
     pbar = tqdm.tqdm(total=input_size)
+    min_batch_size = max(int(args.B / args.t), 1)
+    with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
+        for batch in utils.batch(seu.readfq(in_fh), args.B):
+            for read, (segments, hits, usable_len) in backend(batch, executor, q=args.q, mb=min_batch_size):
+                if args.A is not None:
+                    for h in hits:
+                        a_fh.write(utils.hit2bed(h, read) + "\n")
+                _update_stats(st, segments, hits, usable_len, read)
+                if args.u is not None and len(segments) == 0:
+                    seu.writefq(read, u_fh)
+                for trim_read in chopper.segments_to_reads(read, segments, args.p):
+                    seu.writefq(trim_read, out_fh)
+                    if args.w is not None and len(segments) > 1:
+                        seu.writefq(trim_read, w_fh)
+                if nr_records is None:
+                    pbar.update(seu.record_size(read, 'fastq'))
+                else:
+                    pbar.update(1)
 
-    for read in seu.read_seq_records(args.input_fastx, args.i):
-        pbar.update(_record_size(read, args.i))
-        match, nr_hits, score_stats = list(chopper.score_barcode_groups(
-            read, barcodes, args.t, ALIGN_PARAMS, heu=args.x, heu_limit=args.l).values())[0]
-        if match is not None:
-            if match == 'fwd_match':
-                fwd_matches += 1
-            if match == 'rev_match':
-                rev_matches += 1
-        match_dir = match
-        read, match = _filter_and_annotate(read, match)
-
-        if match is True:
-            SeqIO.write(read, output_handle, args.i)
-        else:
-            unclassified += 1
-            if args.r is not None:
-                unclass_nr_hits.append(nr_hits)
-            if args.u is not None:
-                SeqIO.write(read, unclass_handle, args.i)
-
-        if args.A is not None:
-            scores_handle.write(_get_runid(read.description))
-            scores_handle.write("\t")
-            scores_handle.write(read.id)
-            scores_handle.write("\t")
-            for i, field in enumerate(SCORE_FIELDS):
-                scores_handle.write(str(score_stats[field]))
-                scores_handle.write("\t")
-            scores_handle.write(str(match_dir))
-            scores_handle.write("\n")
-
-    output_handle.flush()
-    output_handle.close()
-
-    if args.u is not None:
-        unclass_handle.flush()
-        unclass_handle.close()
-
-    if args.A is not None:
-        scores_handle.flush()
-        scores_handle.close()
-
-    if args.r is not None:
-        plotter = report.Report(args.r)
-        plotter.plot_bars_simple({'Classified': fwd_matches + rev_matches,
-                                  'Unclassified': unclassified}, title="Basic statistics", ylab="Count")
-        if not args.x:
-            plotter.plot_histograms({'nr_hits': unclass_nr_hits},
-                                    title="Number of hits in unclassified reads", xlab="Number of hits", ylab="Count")
-        plotter.plot_bars_simple({'+': fwd_matches, '-': rev_matches},
-                                 title="Strandedness of classified reads", xlab="Strand", ylab="Count")
-        plotter.close()
+    # Save stats as TSV:
+    stdf = None
+    if args.S is not None or args.r is not None:
+        stdf = _process_stats(st)
+        if tune_df is not None:
+            stdf = stdf.append(pd.DataFrame(tune_df))
 
     if args.S is not None:
-        d = OrderedDict()
-        d['+'] = [fwd_matches]
-        d['-'] = [rev_matches]
-        d['unclassified'] = [unclassified]
-        df = pd.DataFrame(d)
-        df.to_csv(args.S, sep="\t", index=False)
+        stdf.to_csv(args.S, sep="\t", index=False)
+
+    for fh in (in_fh, out_fh, u_fh, w_fh, a_fh):
+        if fh is None:
+            continue
+        fh.flush()
+        fh.close()
+
+    if args.r is not None:
+        _plot_stats(stdf, args.r)
 
     pbar.close()
