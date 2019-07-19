@@ -23,7 +23,7 @@ test_requirements = [
 
 setup(
     name='pychopper',
-    version='0.6.1',
+    version='1.0.0',
     description="TODO.",
     long_description=readme,
     author="ONT Applications Group",
