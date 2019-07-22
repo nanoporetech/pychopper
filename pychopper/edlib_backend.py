@@ -23,7 +23,10 @@ def find_locations(read, all_primers, k = 5):
         result = edlib.align(primer_seq, read, mode="HW", task="locations", k=3)
         ed = result["editDistance"]
         locations =  result["locations"]
-        all_locations[accession] = locations
+        if locations:
+            all_locations[acc] = []
+            for start, stop in locations:
+                all_locations[acc].append( (start, stop, ed))
 
     return all_locations
 
@@ -75,19 +78,20 @@ def get_primers_rev_comp(primers):
 
 
 def main(args):
-    all_primers = get_primers_rev_comp(primers)
-
-    for acc, (seq, qual) in readfq(open(args.fastq, 'r')):
+    all_primers = get_primers_rev_comp(args.primers)
+    k = args.k
+    for i, (acc, (seq, qual)) in enumerate(readfq(open(args.fastq, 'r'))):
         all_locations = find_locations(seq, all_primers, k)
-        print(all_locations)
+        if all_locations:
+            print("read {0} had barcode".format(i), all_locations)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="De novo clustering of long-read transcriptome reads", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--fastq', type=str,  default=False, help='Path to input fastq folder with reads in clusters')
     parser.add_argument('--primers', type=str,  default=False, help='Path to input fastq folder with primers')
-    parser.add_argument('--k', dest="nr_cores", type=int, default=5, help='Max edit distnace')
-
+    parser.add_argument('--k', type=int, default=5, help='Max edit distnace')
+    args = parser.parse_args()
     if len(sys.argv)==1:
         parser.print_help()
         sys.exit()
