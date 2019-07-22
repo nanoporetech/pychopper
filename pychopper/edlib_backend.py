@@ -12,7 +12,7 @@ import seq_utils
 
 
 
-def find_locations(read, all_primers, k = 5):
+def find_locations(read, all_primers, max_ed = 5):
     """
         Input: A reads sequence represented as a string and a dictionary with primers. The dictionary has the primer accession as key and sequence as value.
         returns: Dictionary with primer accession as key and a list of tuples of the following form (start, stop, edit distance) as value.
@@ -20,7 +20,7 @@ def find_locations(read, all_primers, k = 5):
 
     all_locations = {}
     for acc, primer_seq in all_primers.items():
-        result = edlib.align(primer_seq, read, mode="HW", task="locations", k=3)
+        result = edlib.align(primer_seq, read, mode="HW", task="locations", k=max_ed)
         ed = result["editDistance"]
         locations =  result["locations"]
         if locations:
