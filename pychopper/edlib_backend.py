@@ -68,7 +68,7 @@ def readfq(fp): # this is a generator function
 
 def get_primers_rev_comp(primers):
     all_primers = {}
-    for acc, seq in primers.items():
+    for acc, (seq, _) in readfq(open(args.primers, 'r')):
         all_primers[acc] = seq
         all_primers[acc + '_rc'] = seq_utils.reverse_complement(seq)
     return all_primers
@@ -85,6 +85,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="De novo clustering of long-read transcriptome reads", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--fastq', type=str,  default=False, help='Path to input fastq folder with reads in clusters')
+    parser.add_argument('--primers', type=str,  default=False, help='Path to input fastq folder with primers')
     parser.add_argument('--k', dest="nr_cores", type=int, default=5, help='Max edit distnace')
 
     if len(sys.argv)==1:
