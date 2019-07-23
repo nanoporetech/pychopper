@@ -2,10 +2,7 @@
 
 from six.moves import reduce
 import sys
-from Bio import SeqIO
-from Bio.Alphabet.IUPAC import IUPACUnambiguousDNA, IUPACAmbiguousDNA
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
+from pychopper.common_structures import Seq
 
 """ Utilities manipulating biological sequences and formats. Extensions to biopython functionality.
 """
@@ -16,10 +13,6 @@ comp = {
     'a': 't', 't': 'a', 'c': 'g', 'g': 'c', 'x': 'x', 'n': 'n',
     '-': '-'
 }
-
-# Shortcut to the list of DNA bases:
-bases = sorted(list(IUPACUnambiguousDNA().letters))
-ambiguous_bases = sorted(list(IUPACAmbiguousDNA().letters))
 
 
 def base_complement(k):
@@ -54,97 +47,90 @@ def reverse_complement(seq):
     return reduce(lambda x, y: x + y, map(base_complement, seq[::-1]))
 
 
-def mock_qualities(record, mock_qual):
-    """Add mock quality values to SeqRecord object.
-
-    :param record: A SeqRecord object.
-    :param mock_qual: Mock quality value used for each base.
-    :returns: The record augmented with mock quality values.
-    :rtype: object
-
+def readfq(fp):  # this is a generator function
     """
-    rec_copy = record[:]
-    rec_copy.letter_annotations["phred_quality"] = [mock_qual] * len(rec_copy)
-    return rec_copy
-
-
-def new_dna_record(sequence, name, qualities=None):
-    """Create a new SeqRecord object using IUPACUnambiguousDNA and the specified sequence.
-
-    :param sequence: The sequence.
-    :param name: Record identifier.
-    :param qualities: List of base qualities.
-    :returns: The SeqRecord object.
-    :rtype: SeqRecord
-
+    Below function taken from https://github.com/lh3/readfq/blob/master/readfq.py
+    Much faster parsing of large files compared to Biopyhton.
     """
-    seq_record = SeqRecord(
-        Seq(sequence, IUPACUnambiguousDNA), id=name, description="", name="")
-    if qualities is not None:
-        seq_record.letter_annotations["phred_quality"] = qualities
-    return seq_record
+
+    last = None  # this is a buffer keeping the last unprocessed line
+    while True:  # mimic closure; is it a bad idea?
+        if not last:  # the first record or a record following a fastq
+            for l in fp:  # search for the start of the next record
+                if l[0] in '>@':  # fasta/q header line
+                    last = l[:-1]  # save this line
+                    break
+        if not last:
+            break
+        name, seqs, last = last[1:], [], None
+        for l in fp:  # read the sequence
+            if l[0] in '@+>':
+                last = l[:-1]
+                break
+            seqs.append(l[:-1])
+        if not last or last[0] != '+':  # this is a fasta record
+            yield Seq(name, ''.join(seqs), None)  # yield a fasta record
+            if not last:
+                break
+        else:  # this is a fastq record
+            seq, leng, seqs = ''.join(seqs), 0, []
+            for l in fp:  # read the quality
+                seqs.append(l[:-1])
+                leng += len(l) - 1
+                if leng >= len(seq):  # have read enough quality
+                    last = None
+                    yield Seq(Name=name, Seq=seq, Qual="".join(seqs))  # yield a fastq record
+                    break
+            if last:  # reach EOF before reading enough quality
+                yield Seq(name, seq, None)  # yield a fasta record instead
+                break
+
+def writefq(r, fh):
+    q = r.Qual
+    if q is None:
+        q = "!" * len(r.Seq)
+    fh.write("@{}\n{}\n+\n{}\n".format(r.Name, r.Seq, q))
 
 
-def write_seq_records(records_iterator, output_object, format='fasta'):
-    """Write out SeqRecord objects to a file from an iterator in the specified format.
 
-    :param records_iterator: An iterator of SeqRecord objects.
-    :param output_object: Open file object or file name.
-    :param format: Output format (fasta by default).
-    :returns: None
-    :rtype: object
+def revcomp_seq(seq):
+    """ Reverse complement sequence record """
+    qual = seq.Qual
+    if qual is not None:
+        qual = qual[::-1]
+    return Seq(seq.Name, reverse_complement(seq.Seq), qual)
 
-    """
-    if type(output_object) != str:
-        SeqIO.write(records_iterator, output_object, format)
+
+def _filter_and_annotate(read, match):
+    """ Filter sequences by match and annotate with direction. """
+    if match is not None:
+        direction = '+' if match == 'fwd_match' else '-'
+        read.description = read.description + " strand=" + direction
+        if match == 'rev_match':
+            read = _revcomp_seq(read)
+        return read, True
     else:
-        with open(output_object, 'w') as output_handle:
-            SeqIO.write(records_iterator, output_handle, format)
+        return read, False
 
 
-def read_seq_records(input_object, format='fasta'):
-    """Read SeqRecord objects from a file in the specified format.
-
-    :param input_object: A file object or a file name.
-    :param format: Input format (fasta by default).
-    :returns: A dictionary with the parsed SeqRecord objects.
-    :rtype: generator
-
-    """
-    handle = input_object
-    if type(handle) == str:
-        handle = open(handle, "rU")
-    return SeqIO.parse(handle, format)
+def get_runid(desc):
+    """ Parse out runid from sequence description. """
+    tmp = [t for t in desc.split(" ") if t.startswith("runid")]
+    if len(tmp) != 1:
+        return "NA"
+    return tmp[0].rsplit("=", 1)[1]
 
 
-def count_records(input_object, format='fasta'):
-    """Count SeqRecord objects from a file in the specified format.
-
-    :param input_object: A file object or a file name.
-    :param format: Input format (fasta by default).
-    :returns: Number of records in input file.
-    :rtype: int
-
-    """
-    handle = input_object
-    if type(handle) == str:
-        handle = open(handle, "rU")
-    counter = 0
-    for _ in SeqIO.parse(handle, format):
-        counter += 1
-    return counter
-
-
-def read_seq_records_dict(input_object, format='fasta'):
-    """Read SeqRecord objects to a dictionary from a file in the specified format.
-
-    :param input_object: A file object or a file name.
-    :param format: Input format (fasta by default).
-    :returns: An iterator of SeqRecord objects.
-    :rtype: dict
-
-    """
-    handle = input_object
-    if type(handle) == str:
-        handle = open(handle, "rU")
-    return SeqIO.to_dict(SeqIO.parse(handle, format))
+def record_size(read, in_format='fastq'):
+    """ Calculate record size. """
+    if read.Qual is None:
+        in_format = 'fasta'
+    dl = len(read.Name)
+    sl = len(read.Seq)
+    if in_format == 'fastq':
+        bl = dl + 2 * sl + 6
+    elif in_format == 'fasta':
+        bl = dl + sl + 3
+    else:
+        raise Exception("Unkonwn format!")
+    return bl

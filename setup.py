@@ -9,10 +9,7 @@ with open('README.md') as readme_file:
 
 requirements = [
     'edlib',
-    'SimpleHMMER'
-    'biopython',
     'matplotlib',
-    'six',
     'tqdm',
     'pandas',
     'pytest'

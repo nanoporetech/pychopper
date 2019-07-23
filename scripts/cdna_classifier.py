@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-from Bio import SeqIO
 import os
+import sys
 import tqdm
 from pychopper import seq_utils as seu
+from pychopper import utils
 from pychopper import chopper
 from pychopper import report
 import pandas as pd
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 """
 Parse command line arguments.
@@ -17,13 +18,11 @@ Parse command line arguments.
 parser = argparse.ArgumentParser(
     description='Tool to identify full length cDNA reads. Primers have to be specified as they are on the forward strand.')
 parser.add_argument(
-    '-b', metavar='primers', type=str, default=None, help="Primers fasta.", required=True)
+    '-b', metavar='primers', type=str, default=None, help="Primers fasta.", required=False)
 parser.add_argument(
-    '-g', metavar='phmm_dir', type=str, default=None, help="Directory with custom profile HMMs (None).", required=True)
+    '-g', metavar='phmm_file', type=str, default=None, help="File with custom profile HMMs (None).", required=False)
 parser.add_argument(
-    '-i', metavar='input_format', type=str, default='fastq', help="Input/output format (fastq).")
-parser.add_argument('-g', metavar='aln_params', type=str,
-                    help="Alignment parameters (match, mismatch,gap_open,gap_extend).", default="1,-1,2,1")
+    '-c', metavar='config_string', type=str, default="+:SSP,-VNP|-:VNP,-SSP", help="Specify primer configurations for each direction (None).")
 parser.add_argument(
     '-q', metavar='cutoff', type=float, default=98, help="Cutoff parameter (98).")
 parser.add_argument(
@@ -38,63 +37,68 @@ parser.add_argument(
     '-A', metavar='scores_output', type=str, default=None, help="Write alignment scores to this file.")
 parser.add_argument(
     '-m', metavar='method', type=str, default="edlib", help="Detection method (edlib or phmm).")
+parser.add_argument(
+    '-t', metavar='threads', type=int, default=4, help="Number of threads to use (4).")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
 
-# FIXME: the utility function below should be moved to a different file with documentation.
-# FIXME: we need a way to specify the valid configuration for a read in each direction!
+def _new_stats():
+    st = OrderedDict()
+    st["Classification"] = OrderedDict([('Classified', 0), ('Rescue', 0), ('Unclassified', 0)])
+    st["Strand"] = OrderedDict([('+', 0), ('-', 0)])
+    st["RescueStrand"] = OrderedDict([('+', 0), ('-', 0)])
+    st["RescueSegmentNr"] = defaultdict(int)
+    st["RescueHitNr"] = defaultdict(int)
+    st["UnclassHitNr"] = defaultdict(int)
+    st["PercentUsable"] = defaultdict(int)
+    return st
 
-def _revcomp_seq(read):
-    """ Reverse complement sequence and fix Id. """
-    rev_read = read.reverse_complement()
-    rev_read.id, rev_read.description = read.id, read.description
-    return rev_read
 
-
-def _filter_and_annotate(read, match):
-    """ Filter sequences by match and annotate with direction. """
-    if match is not None:
-        direction = '+' if match == 'fwd_match' else '-'
-        read.description = read.description + " strand=" + direction
-        if match == 'rev_match':
-            read = _revcomp_seq(read)
-        return read, True
+def _update_stats(st, segments, hits, usable_len, read):
+    if len(segments) == 0:
+        st["Classification"]["Unclassified"] += 1
+        st["UnclassHitNr"][len(hits)] += 1
+    elif len(segments) == 1:
+        st["Classification"]["Classified"] += 1
+        st["Strand"][segments[0].Strand] += 1
+        st["PercentUsable"][int(segments[0].Len / len(read.Seq) * 100)] += 1
     else:
-        return read, False
-
-
-def _get_runid(desc):
-    """ Parse out runid from sequence description. """
-    tmp = [t for t in desc.split(" ") if t.startswith("runid")]
-    if len(tmp) != 1:
-        return "NA"
-    return tmp[0].rsplit("=", 1)[1]
-
-
-def _parse_aln_params(pstr):
-    """ Parse alignment parameters. """
-    res = {}
-    tmp = [int(x) for x in pstr.split(',')]
-    res['match'] = tmp[0]
-    res['mismatch'] = tmp[1]
-    res['gap_open'] = tmp[2]
-    res['gap_extend'] = tmp[3]
-    return res
-
-
-def _record_size(read, in_format):
-    """ Calculate record size. """
-    dl = len(read.description)
-    sl = len(read.seq)
-    if in_format == 'fastq':
-        bl = dl + 2 * sl + 6
-    elif in_format == 'fasta':
-        bl = dl + sl + 3
-    else:
-        raise Exception("Unkonwn format!")
-    return bl
+        for rs in segments:
+            st["Classification"]["Rescue"] += 1
+            st["RescueStrand"][rs.Strand] += 1
+            st["RescueHitNr"][len(hits)] += 1
+        st["PercentUsable"][int(sum([s.Len for s in segments]) / len(read.Seq) * 100)] += 1
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
+    config = utils.parse_config_string(args.c)
+
+    in_fh = sys.stdin
+    if args.input_fastx != '-':
+        in_fh = open(args.input_fastx, "r")
+
+    out_fh = sys.stdout
+    if args.output_fastx != '-':
+        out_fh = open(args.output_fastx, "w")
+
+    st = _new_stats()
+    input_size = None
+    if args.input_fastx != "-":
+        input_size = os.stat(args.input_fastx).st_size
+    pbar = tqdm.tqdm(total=input_size)
+
+    for read in seu.readfq(in_fh):
+        segments, hits, usable_len = chopper.chopper_phmm(read, args.g, config, args.q, args.t)
+        nr_subreads = len(segments)
+        _update_stats(st, segments, hits, usable_len, read)
+        for trim_read in chopper.segments_to_reads(read, segments):
+            seu.writefq(trim_read, out_fh)
+        pbar.update(seu.record_size(read, 'fastq'))
+
+    print(st)
+    in_fh.close()
+    out_fh.flush()
+    out_fh.close()
+    pbar.close()
