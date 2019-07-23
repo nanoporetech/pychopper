@@ -90,8 +90,12 @@ if __name__ == '__main__':
     pbar = tqdm.tqdm(total=input_size)
 
     for read in seu.readfq(in_fh):
-        segments, hits, usable_len = chopper.chopper_phmm(read, args.g, config, args.q, args.t)
-        nr_subreads = len(segments)
+        if args.m == "phmm":
+            segments, hits, usable_len = chopper.chopper_phmm(read, args.g, config, args.q, args.t)
+        elif args.m == "edlib":
+            pass
+        else:
+            raise
         _update_stats(st, segments, hits, usable_len, read)
         for trim_read in chopper.segments_to_reads(read, segments):
             seu.writefq(trim_read, out_fh)
