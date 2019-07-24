@@ -8,6 +8,7 @@ import tqdm
 from pychopper import seq_utils as seu
 from pychopper import utils
 from pychopper import chopper
+from pychopper import phmm_data
 from pychopper import report
 import pandas as pd
 from collections import OrderedDict, defaultdict
@@ -69,10 +70,18 @@ def _update_stats(st, segments, hits, usable_len, read):
             st["RescueStrand"][rs.Strand] += 1
             st["RescueHitNr"][len(hits)] += 1
         st["PercentUsable"][int(sum([s.Len for s in segments]) / len(read.Seq) * 100)] += 1
+        st["RescueSegmentNr"][len(segments)] += 1
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
+
+    if args.g is None:
+        args.g = os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm")
+
+    if args.b is None:
+        args.g = os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas")
+
     config = utils.parse_config_string(args.c)
 
     in_fh = sys.stdin
