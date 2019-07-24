@@ -9,7 +9,7 @@ import argparse
 import edlib
 
 import seq_utils
-
+from pychopper.common_structures import Hit, Seq
 
 
 def find_locations(read, all_primers, max_ed = 5):
@@ -18,15 +18,18 @@ def find_locations(read, all_primers, max_ed = 5):
         returns: Dictionary with primer accession as key and a list of tuples of the following form (start, stop, edit distance) as value.
     """
 
-    all_locations = {}
-    for acc, primer_seq in all_primers.items():
-        result = edlib.align(primer_seq, read, mode="HW", task="locations", k=max_ed)
+    all_locations = []
+    for primer_acc, primer_seq in all_primers.items():
+        result = edlib.align(primer_seq, read.Seq, mode="HW", task="locations", k=max_ed)
         ed = result["editDistance"]
         locations =  result["locations"]
         if locations:
-            all_locations[acc] = []
-            for start, stop in locations:
-                all_locations[acc].append( (start, stop, ed))
+            all_locations[primer_acc] = []
+            for refstart, refend in locations:
+                # all_locations[primer_acc].append( (start, stop, ed))
+                # ('Hit', 'Ref RefStart RefEnd Query QueryStart QueryEnd Score')
+                hit = Hit(read.Name, refstart, refend, primer_acc, 0, len(primer_seq), (len(primer_seq) - ed)/(refend - refstart))
+                all_locations.append( hit )
 
     return all_locations
 
@@ -73,15 +76,19 @@ def get_primers_rev_comp(primers):
     all_primers = {}
     for acc, (seq, _) in readfq(open(args.primers, 'r')):
         all_primers[acc] = seq
-        all_primers[acc + '_rc'] = seq_utils.reverse_complement(seq)
+        all_primers[ '-' + acc ] = seq_utils.reverse_complement(seq)
     return all_primers
 
 
 def main(args):
     all_primers = get_primers_rev_comp(args.primers)
-    k = args.k
-    for i, (acc, (seq, qual)) in enumerate(readfq(open(args.fastq, 'r'))):
-        all_locations = find_locations(seq, all_primers, k)
+    primer_length = len(all_primers.values()[0]) 
+    # k = args.k
+    k = int(round(args.q * primer_length))
+    print("edit distance set to:", k)
+
+    for i, read in enumerate( seu.readfq(open(args.fastq, 'r'))):
+        all_locations = find_locations(read, all_primers, k)
         if all_locations:
             print("read {0} had barcode".format(i), all_locations)
 
@@ -91,6 +98,7 @@ if __name__ == '__main__':
     parser.add_argument('--fastq', type=str,  default=False, help='Path to input fastq folder with reads in clusters')
     parser.add_argument('--primers', type=str,  default=False, help='Path to input fastq folder with primers')
     parser.add_argument('--k', type=int, default=5, help='Max edit distnace')
+    parser.add_argument('--q', type=float, default=0.9, help='Minimum identity')
     args = parser.parse_args()
     if len(sys.argv)==1:
         parser.print_help()
