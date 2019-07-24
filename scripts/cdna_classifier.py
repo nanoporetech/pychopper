@@ -92,14 +92,14 @@ if __name__ == '__main__':
     pbar = tqdm.tqdm(total=input_size)
 
     if args.m == "edlib":
-        all_primers, primer_length = get_primers(args.b)
+        all_primers, primer_length = seu.get_primers(args.b)
         max_ed = int(round( (1.0 - args.q) * primer_length))
 
     for read in seu.readfq(in_fh):
         if args.m == "phmm":
             segments, hits, usable_len = chopper.chopper_phmm(read, args.g, config, args.q, args.t)
         elif args.m == "edlib":
-            segments, hits, usable_len = chopper.chopper_edlib(read, all_primers, config, max_ed)
+            segments, hits, usable_len = chopper.chopper_edlib(read, all_primers, config, max_ed, args.q)
         else:
             raise
         _update_stats(st, segments, hits, usable_len, read)

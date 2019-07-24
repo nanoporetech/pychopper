@@ -92,8 +92,8 @@ def chopper_phmm(read, phmm_file, config, cutoff, threads):
     return analyse_hits(hits, config)
 
 
-def chopper_edlib(read, primers, config, max_ed):
-    hits = edlib_backend.find_locations(read, primers, k=max_ed)
+def chopper_edlib(read, primers, config, max_ed, cutoff):
+    hits = edlib_backend.find_locations(read, primers, max_ed=max_ed)
     hits = process_hits(hits, cutoff)
     return analyse_hits(hits, config)
 

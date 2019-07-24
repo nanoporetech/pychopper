@@ -29,7 +29,7 @@ def find_locations(read, all_primers, max_ed = 5):
             for refstart, refend in locations:
                 # all_locations[primer_acc].append( (start, stop, ed))
                 # ('Hit', 'Ref RefStart RefEnd Query QueryStart QueryEnd Score')
-                hit = Hit(read.Name, refstart, refend, primer_acc, 0, len(primer_seq), (len(primer_seq) - ed)/(refend - refstart - 1))
+                hit = Hit(read.Name, refstart, refend, primer_acc, 0, len(primer_seq),  ed/(refend - refstart - 1))
                 all_locations.append( hit )
 
     return all_locations

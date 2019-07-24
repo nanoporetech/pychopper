@@ -137,7 +137,7 @@ def record_size(read, in_format='fastq'):
 
 def get_primers(primers):
     all_primers = {}
-    for acc, (seq, _) in readfq(open(args.primers, 'r')):
-        all_primers[acc] = seq
-        all_primers[ '-' + acc ] = seu.reverse_complement(seq)
-    return all_primers, len(seq)
+    for primer in readfq(open(primers, 'r')):
+        all_primers[primer.Name] = primer.Seq
+        all_primers[ '-' + primer.Name ] = reverse_complement(primer.Seq)
+    return all_primers, len(primer.Seq)
