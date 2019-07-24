@@ -77,12 +77,12 @@ def get_primers_rev_comp(primers):
     for acc, (seq, _) in readfq(open(args.primers, 'r')):
         all_primers[acc] = seq
         all_primers[ '-' + acc ] = seq_utils.reverse_complement(seq)
-    return all_primers
+    return all_primers, len(seq)
 
 
 def main(args):
-    all_primers = get_primers_rev_comp(args.primers)
-    primer_length = len(all_primers.values()[0]) 
+    all_primers, primer_length = get_primers_rev_comp(args.primers)
+    # primer_length = len(all_primers.values()[0]) 
     # k = args.k
     k = int(round(args.q * primer_length))
     print("edit distance set to:", k)
