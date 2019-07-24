@@ -90,7 +90,14 @@ def main(args):
     for i, read in enumerate( seu.readfq(open(args.fastq, 'r'))):
         all_locations = find_locations(read, all_primers, k)
         if all_locations:
-            print("read {0} had barcode".format(i), all_locations)
+            has_1, has_2 = False, False
+            for h in all_locations:
+                if 'cDNA|1' in h.Query:
+                    has_1 = True
+                if 'cDNA|2' in h.Query:
+                    has_2 = True
+            if not (has_1 and has_2):
+                print("read {0} did not have both barcodes".format(i), all_locations)
 
 
 if __name__ == '__main__':
