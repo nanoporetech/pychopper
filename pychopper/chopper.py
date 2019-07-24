@@ -64,7 +64,11 @@ def analyse_hits(hits, config):
     p = (tlen, nr - 1)
     while True:
         if p[0] == 1:
-            valid_segments.append(segments[p[1]])
+            s = segments[p[1]]
+            # Filter out invalid segments which can be part of the 
+            # solution:
+            if s.Len > 0:
+                valid_segments.append(s)
         if p[1] == 0:
             break
         p = B[p]
