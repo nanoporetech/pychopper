@@ -8,8 +8,9 @@ import argparse
 
 import edlib
 
-import seq_utils
-from common_structures import Hit, Seq
+# import seq_utils
+from pychopper.common_structures import Hit, Seq
+from pychopper import seq_utils as seu
 
 
 def find_locations(read, all_primers, max_ed = 5):
