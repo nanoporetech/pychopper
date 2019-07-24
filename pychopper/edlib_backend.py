@@ -77,7 +77,7 @@ def get_primers_rev_comp(primers):
     all_primers = {}
     for acc, (seq, _) in readfq(open(args.primers, 'r')):
         all_primers[acc] = seq
-        all_primers[ '-' + acc ] = seq_utils.reverse_complement(seq)
+        all_primers[ '-' + acc ] = seu.reverse_complement(seq)
     return all_primers, len(seq)
 
 
