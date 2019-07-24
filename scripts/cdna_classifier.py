@@ -26,6 +26,8 @@ parser.add_argument(
 parser.add_argument(
     '-q', metavar='cutoff', type=float, default=98, help="Cutoff parameter (98).")
 parser.add_argument(
+    '-z', metavar='identity_cutoff', type=float, default=0.8, help="Lower identity threshold for finding primer/barcode (0.8).")
+parser.add_argument(
     '-r', metavar='report_pdf', type=str, default=None, help="Report PDF.")
 parser.add_argument(
     '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
@@ -89,11 +91,15 @@ if __name__ == '__main__':
         input_size = os.stat(args.input_fastx).st_size
     pbar = tqdm.tqdm(total=input_size)
 
+    if args.m == "edlib":
+        all_primers, primer_length = get_primers(args.b)
+        max_ed = int(round( (1.0 - args.q) * primer_length))
+
     for read in seu.readfq(in_fh):
         if args.m == "phmm":
             segments, hits, usable_len = chopper.chopper_phmm(read, args.g, config, args.q, args.t)
         elif args.m == "edlib":
-            pass
+            segments, hits, usable_len = chopper.chopper_edlib(read, all_primers, config, max_ed)
         else:
             raise
         _update_stats(st, segments, hits, usable_len, read)
