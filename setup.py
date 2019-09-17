@@ -11,6 +11,7 @@ requirements = [
     'edlib',
     'parasail',
     'matplotlib',
+    'seaborn',
     'tqdm',
     'six',
     'pandas',
