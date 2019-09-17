@@ -180,8 +180,10 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 ## References and Supporting Information
 
-Research Release
+See the post announcing the tools at the Oxford Nanopore Technologies Community [here](https://community.nanoporetech.com/posts/new-transcriptomics-analys).
+
+## Research Release
+
 Research releases are provided as technology demonstrators to provide early access to features or stimulate Community development of tools. Support for this software will be minimal and is only provided directly by the developers. Feature requests, improvements, and discussions are welcome and can be implemented by forking and pull requests. However much as we would like to rectify every issue and piece of feedback users may have, the developers may have limited resource for support of this software. Research releases may be unstable and subject to rapid iteration by Oxford Nanopore Technologies.
 
-See the post announcing the tools at the Oxford Nanopore Technologies Community [here](https://community.nanoporetech.com/posts/new-transcriptomics-analys).
 
