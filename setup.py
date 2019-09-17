@@ -25,7 +25,7 @@ test_requirements = [
 
 setup(
     name='pychopper',
-    version='2.0.0',
+    version='2.0.1',
     description="A tool to identify full length cDNA reads.",
     long_description=readme,
     author="ONT Applications Group",
