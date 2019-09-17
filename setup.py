@@ -33,9 +33,12 @@ setup(
     url='',
     packages=[
         'pychopper',
+        'pychopper.phmm_data',
+        'pychopper.primer_data'
     ],
     package_dir={'pychopper':
                  'pychopper'},
+    package_data={'pychopper': ['primer_data/*.fas', 'phmm_data/*.*']},
     include_package_data=True,
     install_requires=requirements,
     zip_safe=False,

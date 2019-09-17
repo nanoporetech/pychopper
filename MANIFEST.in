@@ -1,8 +1,10 @@
 
 include README.md
-include LICENSE
+include LICENSE.md
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 
+rerursive-include pychopper/phmm_data *.*
+rerursive-include pychopper/primer_data *.fas
 recursive-include docs *.rst conf.py Makefile make.bat *.jpg *.png *.gif

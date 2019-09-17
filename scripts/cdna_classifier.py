@@ -12,8 +12,9 @@ import tqdm
 
 from pychopper import seq_utils as seu
 from pychopper import utils
-from pychopper import phmm_data, primer_data
 from pychopper import chopper, report
+import pychopper.phmm_data as phmm_data
+import pychopper.primer_data as primer_data
 
 
 """

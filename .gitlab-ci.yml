@@ -11,9 +11,10 @@ before_script:
     - apt-add-repository universe
     - apt-get update
     - apt-get install -y python3 python3-pip make python3-numpy python3-matplotlib hmmer 
-    - alias python=python3; pip3 install --upgrade pip sphinx sphinx-argparse sphinx_rtd_theme pytest pandas
-    - hash -r pip3
-    - alias python=python3; pip3 install -e ./
+    - alias python=python3; pip install --upgrade pip
+    - alias python=python3; pip install sphinx sphinx-argparse sphinx_rtd_theme pytest pandas
+    - hash -r pip
+    - alias python=python3; pip install -e ./
 
   
 do_testing:
