@@ -43,7 +43,7 @@ pip install git+https://github.com/nanoporetech/pychopper.git
 Or install from bioconda:
 
 ```bash
-conda install -c bioconda pychopper
+conda install -c bioconda pychopper>=2.0
 ```
 
 Run the tests:
