@@ -29,7 +29,7 @@ The required Python packages are installed by either `pip` or `conda`. The profi
 This can be easily installed using conda:
 
 ```bash
-conda install -c bioconda hmmer
+conda install -c bioconda "hmmer>=3.0"
 ```
 
 ## Installation
@@ -43,7 +43,7 @@ pip install git+https://github.com/nanoporetech/pychopper.git
 Or install from bioconda:
 
 ```bash
-conda install -c bioconda pychopper>=2.0
+conda install -c bioconda "pychopper>=2.0"
 ```
 
 Run the tests:
