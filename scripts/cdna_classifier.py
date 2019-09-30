@@ -37,7 +37,7 @@ parser.add_argument(
 parser.add_argument(
     '-w', metavar='rescue_output', type=str, default=None, help="Write rescued reads to this file.")
 parser.add_argument(
-    '-S', metavar='stats_output', type=str, default=None, help="Write statistics to this file.")
+    '-S', metavar='stats_output', type=str, default="cdna_classifier_report.tsv", help="Write statistics to this file.")
 parser.add_argument(
     '-Y', metavar='autotune_nr', type=float, default=10000, help="Approximate number of reads used for tuning the cutoff parameter (10000).")
 parser.add_argument(
