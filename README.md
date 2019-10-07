@@ -95,6 +95,8 @@ optional arguments:
                        (1000000).
 ```
 
+*WARNING: Do not turn on trimming during basecalling as it will remove the primers needed for classifying the reads!*
+
 ### Basic usage
 
 Example usage with default PCS109/DCS109 primers using the default pHMM backend:
