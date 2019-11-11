@@ -78,21 +78,24 @@ def _update_stats(st, d_fh,  segments, hits, usable_len, read):
     if len(segments) == 0:
         st["Classification"]["Unclassified"] += 1
         st["UnclassHitNr"][len(hits)] += 1
-        d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, ".", ".", ".", "."))
+        if d_fh is not None:
+            d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, ".", ".", ".", "."))
     elif len(segments) == 1:
         st["Classification"]["Classified"] += 1
         st["Strand"][segments[0].Strand] += 1
         st["Unusable"][int(segments[0].Len / len(read.Seq) * 100)] += 1
-        rs = segments[0]
-        sr_id = "{}:{}|{}".format(rs.Start, rs.End, read.Id)
-        d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, sr_id, rs.Start, rs.End, rs.Strand))
+        if d_fh is not None:
+            rs = segments[0]
+            sr_id = "{}:{}|{}".format(rs.Start, rs.End, read.Id)
+            d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, sr_id, rs.Start, rs.End, rs.Strand))
     else:
         for rs in segments:
             st["Classification"]["Rescue"] += 1
             st["RescueStrand"][rs.Strand] += 1
             st["RescueHitNr"][len(hits)] += 1
-            sr_id = "{}:{}|{}".format(rs.Start, rs.End, read.Id)
-            d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, sr_id, rs.Start, rs.End, rs.Strand))
+            if d_fh is not None:
+                sr_id = "{}:{}|{}".format(rs.Start, rs.End, read.Id)
+                d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, sr_id, rs.Start, rs.End, rs.Strand))
         st["Unusable"][len(read.Seq) - int(sum([s.Len for s in segments]))] += 1
         st["RescueSegmentNr"][len(segments)] += 1
 
