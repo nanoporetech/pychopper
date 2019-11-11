@@ -54,6 +54,8 @@ parser.add_argument(
     '-t', metavar='threads', type=int, default=8, help="Number of threads to use (8).")
 parser.add_argument(
     '-B', metavar='batch_size', type=int, default=1000000, help="Maximum number of reads processed in each batch (1000000).")
+parser.add_argument(
+    '-D', metavar='read stats', type=str, default=None, help="Tab separated file with per-read stats (None).")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
 parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
 
@@ -71,20 +73,26 @@ def _new_stats():
     return st
 
 
-def _update_stats(st, segments, hits, usable_len, read):
+def _update_stats(st, d_fh,  segments, hits, usable_len, read):
     "Update stats dictionary with properties of a read"
     if len(segments) == 0:
         st["Classification"]["Unclassified"] += 1
         st["UnclassHitNr"][len(hits)] += 1
+        d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, ".", ".", ".", "."))
     elif len(segments) == 1:
         st["Classification"]["Classified"] += 1
         st["Strand"][segments[0].Strand] += 1
         st["Unusable"][int(segments[0].Len / len(read.Seq) * 100)] += 1
+        rs = segments[0]
+        sr_id = "{}:{}|{}".format(rs.Start, rs.End, read.Id)
+        d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, sr_id, rs.Start, rs.End, rs.Strand))
     else:
         for rs in segments:
             st["Classification"]["Rescue"] += 1
             st["RescueStrand"][rs.Strand] += 1
             st["RescueHitNr"][len(hits)] += 1
+            sr_id = "{}:{}|{}".format(rs.Start, rs.End, read.Id)
+            d_fh.write("{}\t{}\t{}\t{}\t{}\n".format(read.Id, sr_id, rs.Start, rs.End, rs.Strand))
         st["Unusable"][len(read.Seq) - int(sum([s.Len for s in segments]))] += 1
         st["RescueSegmentNr"][len(segments)] += 1
 
@@ -214,6 +222,11 @@ if __name__ == '__main__':
     if args.A is not None:
         a_fh = open(args.A, "w")
 
+    d_fh = None
+    if args.D is not None:
+        d_fh = open(args.D, "w")
+        d_fh.write("Read\tSegment\tStart\tEnd\tStrand\n")
+
     st = _new_stats()
     input_size = None
     if args.input_fastx != "-":
@@ -295,7 +308,7 @@ if __name__ == '__main__':
                 if args.A is not None:
                     for h in hits:
                         a_fh.write(utils.hit2bed(h, read) + "\n")
-                _update_stats(st, segments, hits, usable_len, read)
+                _update_stats(st, d_fh, segments, hits, usable_len, read)
                 if args.u is not None and len(segments) == 0:
                     seu.writefq(read, u_fh)
                 for trim_read in chopper.segments_to_reads(read, segments, args.p):
@@ -317,7 +330,7 @@ if __name__ == '__main__':
     if args.S is not None:
         stdf.to_csv(args.S, sep="\t", index=False)
 
-    for fh in (in_fh, out_fh, u_fh, w_fh, a_fh):
+    for fh in (in_fh, out_fh, u_fh, w_fh, a_fh, d_fh):
         if fh is None:
             continue
         fh.flush()
