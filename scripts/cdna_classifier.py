@@ -79,7 +79,7 @@ def _update_stats(st, d_fh,  segments, hits, usable_len, read):
         st["Classification"]["Unclassified"] += 1
         st["UnclassHitNr"][len(hits)] += 1
         if d_fh is not None:
-            d_fh.write("{}\t{}\t0\t{}\t{}\t{}\n".format(read.Id, len(read.Seq), -1, -1, "."))
+            d_fh.write("{}\t{}\t0\t{}\t{}\t{}\n".format(read.Name, len(read.Seq), -1, -1, "."))
     elif len(segments) == 1:
         st["Classification"]["Classified"] += 1
         st["Strand"][segments[0].Strand] += 1
