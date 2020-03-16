@@ -31,6 +31,10 @@ parser.add_argument(
 parser.add_argument(
     '-q', metavar='cutoff', type=float, default=None, help="Cutoff parameter (autotuned).")
 parser.add_argument(
+    '-Q', metavar='min_qual', type=float, default=7.0, help="Minimum mean base quality (7.0).")
+parser.add_argument(
+    '-z', metavar='min_len', type=int, default=50, help="Minimum segment length (50).")
+parser.add_argument(
     '-r', metavar='report_pdf', type=str, default="cdna_classifier_report.pdf", help="Report PDF (cdna_classifier_report.pdf).")
 parser.add_argument(
     '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
@@ -70,6 +74,7 @@ def _new_stats():
     st["RescueHitNr"] = defaultdict(int)
     st["UnclassHitNr"] = defaultdict(int)
     st["Unusable"] = defaultdict(int)
+    st["LenFail"] = 0
     return st
 
 
@@ -101,6 +106,9 @@ def _update_stats(st, d_fh,  segments, hits, usable_len, read):
 def _process_stats(st):
     "Convert stats dictionary into a data frame"
     res = OrderedDict([("Category", []), ("Name", []), ("Value", [])])
+    res["Category"] += ["LenFail"]
+    res["Name"] += ["LenFail"]
+    res["Value"] += [st["LenFail"]]
     for k, v in st['Classification'].items():
         res["Category"] += ["Classification"]
         res["Name"] += [k]
@@ -172,7 +180,7 @@ def _plot_stats(st, pdf):
     _plot_pd_bars(st.loc[st.Category == "UnclassHitNr", ].copy(), "Number of hits in unclassified reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueHitNr", ].copy(), "Number of hits in rescued reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueSegmentNr", ].copy(), "Number of usable segments per rescued read", R)
-    if args.Y > 0:
+    if args.q is None:
         _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Classified reads as function of cutoff(q). Best q={:.4f}".format(args.q), R, vline=args.q)
     udf = st.loc[st.Category == "Unusable", ].copy()
     udf.Name = np.log10(1.0 + np.array(udf.Name, dtype=float))
@@ -251,13 +259,14 @@ if __name__ == '__main__':
     # Pick the -q maximizing the number of classified reads using frid search:
     nr_records = None
     tune_df = None
-    if args.Y > 0:
+    if args.q is None:
         nr_cutoffs = args.L
         cutoffs = np.linspace(0.0, 1.0, num=nr_cutoffs)
         cutoffs = cutoffs / cutoffs[-1]
         if args.m == "phmm":
             cutoffs = np.linspace(10**-5, 5.0, num=nr_cutoffs)
         class_reads = []
+        class_readLens = []
         nr_records = utils.count_fastq_records(args.input_fastx)
         opt_batch = int(nr_records / args.t)
         if opt_batch < args.B:
@@ -268,18 +277,22 @@ if __name__ == '__main__':
         if target_prop > 1.0:
             target_prop = 1.0
         sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
-        read_sample = list(seu.readfq(open(args.input_fastx, "r"), sample=target_prop))
-        sys.stderr.write("Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%).\n".format(len(read_sample), target_prop * 100.0))
+        read_sample = list(seu.readfq(open(args.input_fastx, "r"), sample=target_prop, min_qual=args.Q))
+        sys.stderr.write("Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%) passing quality filters (Q >= {}).\n".format(len(read_sample), target_prop * 100.0, args.Q))
         sys.stderr.write("Optimizing over {} cutoff values.\n".format(args.L))
         for qv in tqdm.tqdm(cutoffs):
+            clsLen = 0
             cls = 0
             with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
                 for batch in utils.batch(read_sample, int((len(read_sample)))):
                     for read, (segments, hits, usable_len) in backend(batch, executor, qv, max(1000, int((len(read_sample)) / args.t))):
-                        flt = list([x for x in segments if x.Len > 0])
-                        cls += len(flt)
+                        flt = list([x.Len for x in segments if x.Len > 0])
+                        if len(flt) == 1:
+                            clsLen += sum(flt)
+                            cls += 1
             class_reads.append(cls)
-        best_qi = np.argmax(class_reads)
+            class_readLens.append(clsLen)
+        best_qi = np.argmax(class_readLens)
         args.q = cutoffs[best_qi]
         tune_df = OrderedDict([("Category", []), ("Name", []), ("Value", [])])
         for i, c in enumerate(cutoffs):
@@ -304,7 +317,7 @@ if __name__ == '__main__':
     pbar = tqdm.tqdm(total=input_size)
     min_batch_size = max(int(args.B / args.t), 1)
     with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
-        for batch in utils.batch(seu.readfq(in_fh), args.B):
+        for batch in utils.batch(seu.readfq(in_fh, min_qual=args.Q), args.B):
             for read, (segments, hits, usable_len) in backend(batch, executor, q=args.q, mb=min_batch_size):
                 if args.A is not None:
                     for h in hits:
@@ -313,7 +326,12 @@ if __name__ == '__main__':
                 if args.u is not None and len(segments) == 0:
                     seu.writefq(read, u_fh)
                 for trim_read in chopper.segments_to_reads(read, segments, args.p):
-                    seu.writefq(trim_read, out_fh)
+                    if args.u is not None and len(trim_read.Seq) < args.z:
+                        st["LenFail"] += 1
+                        seu.writefq(read, u_fh)
+                        continue
+                    if len(segments) == 1:
+                        seu.writefq(trim_read, out_fh)
                     if args.w is not None and len(segments) > 1:
                         seu.writefq(trim_read, w_fh)
                 if nr_records is None:

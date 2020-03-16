@@ -2,6 +2,7 @@
 
 from six.moves import reduce
 from numpy.random import random
+from math import log
 import sys
 from pychopper.common_structures import Seq
 
@@ -48,7 +49,7 @@ def reverse_complement(seq):
     return reduce(lambda x, y: x + y, map(base_complement, seq[::-1]))
 
 
-def readfq(fp, sample=None):  # this is a generator function
+def readfq(fp, sample=None, min_qual=None):  # this is a generator function
     """
     Below function taken from https://github.com/lh3/readfq/blob/master/readfq.py
     Much faster parsing of large files compared to Biopyhton.
@@ -82,7 +83,9 @@ def readfq(fp, sample=None):  # this is a generator function
                 if leng >= len(seq):  # have read enough quality
                     last = None
                     if sample is None or (random() < sample):
-                        yield Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual="".join(seqs))  # yield a fastq record
+                        quals = "".join(seqs)
+                        if min_qual is None or mean_qual(quals) >= min_qual:
+                            yield Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals)  # yield a fastq record
                     break
             if last:  # reach EOF before reading enough quality
                 if sample is None or (random() < sample):
@@ -136,3 +139,25 @@ def get_primers(primers):
         all_primers[primer.Name] = primer.Seq
         all_primers['-' + primer.Name] = reverse_complement(primer.Seq)
     return all_primers
+
+
+def errs_tab(n):
+    """Generate list of error rates for qualities less than equal than n."""
+    return [10**(q / -10) for q in range(n + 1)]
+
+
+def mean_qual(quals, qround=False, tab=errs_tab(128)):
+    """Calculate average basecall quality of a read.
+    Receive the ascii quality scores of a read and return the average quality for that read
+    First convert Phred scores to probabilities,
+    calculate average error probability
+    convert average back to Phred scale
+    """
+    if quals:
+        mq = -10 * log(sum([tab[ord(q) - 33] for q in quals]) / len(quals), 10)
+        if qround:
+            return round(mq)
+        else:
+            return mq
+    else:
+        return None
