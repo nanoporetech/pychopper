@@ -67,7 +67,7 @@ parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Outp
 def _new_stats():
     "Initialize a new statistic dictionary"
     st = OrderedDict()
-    st["Classification"] = OrderedDict([('Classified', 0), ('Rescue', 0), ('Unclassified', 0)])
+    st["Classification"] = OrderedDict([('Primers_found', 0), ('Rescue', 0), ('Unusable', 0)])
     st["Strand"] = OrderedDict([('+', 0), ('-', 0)])
     st["RescueStrand"] = OrderedDict([('+', 0), ('-', 0)])
     st["RescueSegmentNr"] = defaultdict(int)
@@ -81,12 +81,12 @@ def _new_stats():
 def _update_stats(st, d_fh,  segments, hits, usable_len, read):
     "Update stats dictionary with properties of a read"
     if len(segments) == 0:
-        st["Classification"]["Unclassified"] += 1
+        st["Classification"]["Unusable"] += 1
         st["UnclassHitNr"][len(hits)] += 1
         if d_fh is not None:
             d_fh.write("{}\t{}\t0\t{}\t{}\t{}\n".format(read.Name, len(read.Seq), -1, -1, "."))
     elif len(segments) == 1:
-        st["Classification"]["Classified"] += 1
+        st["Classification"]["Primers_found"] += 1
         st["Strand"][segments[0].Strand] += 1
         st["Unusable"][int(segments[0].Len / len(read.Seq) * 100)] += 1
         if d_fh is not None:
@@ -181,7 +181,7 @@ def _plot_stats(st, pdf):
     _plot_pd_bars(st.loc[st.Category == "RescueHitNr", ].copy(), "Number of hits in rescued reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueSegmentNr", ].copy(), "Number of usable segments per rescued read", R)
     if args.q is None:
-        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Classified reads as function of cutoff(q). Best q={:.4f}".format(args.q), R, vline=args.q)
+        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4f}".format(args.q), R, vline=args.q)
     udf = st.loc[st.Category == "Unusable", ].copy()
     udf.Name = np.log10(1.0 + np.array(udf.Name, dtype=float))
     _plot_pd_line(udf, "Log10 length distribution of trimmed away sequences.", R)
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     d_fh = None
     if args.D is not None:
         d_fh = open(args.D, "w")
-        d_fh.write("Read\tLength\tClassified\tStart\tEnd\tStrand\n")
+        d_fh.write("Read\tLength\tStatus\tStart\tEnd\tStrand\n")
 
     st = _new_stats()
     input_size = None
@@ -276,6 +276,7 @@ if __name__ == '__main__':
             target_prop = args.Y / float(nr_records)
         if target_prop > 1.0:
             target_prop = 1.0
+        sys.stderr.write("Counting fastq records in input file: {}\n".format(args.input_fastx))
         sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
         read_sample = list(seu.readfq(open(args.input_fastx, "r"), sample=target_prop, min_qual=args.Q))
         sys.stderr.write("Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%) passing quality filters (Q >= {}).\n".format(len(read_sample), target_prop * 100.0, args.Q))
