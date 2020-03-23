@@ -84,7 +84,7 @@ def readfq(fp, sample=None, min_qual=None):  # this is a generator function
                     last = None
                     if sample is None or (random() < sample):
                         quals = "".join(seqs)
-                        if min_qual is None or mean_qual(quals) >= min_qual:
+                        if not (min_qual is not None and mean_qual(quals) < min_qual):
                             yield Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals)  # yield a fastq record
                     break
             if last:  # reach EOF before reading enough quality
