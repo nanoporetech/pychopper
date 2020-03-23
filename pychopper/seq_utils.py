@@ -160,4 +160,4 @@ def mean_qual(quals, qround=False, tab=errs_tab(128)):
         else:
             return mq
     else:
-        return None
+        return 0.0
