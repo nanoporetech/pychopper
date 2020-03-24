@@ -65,3 +65,13 @@ def count_fastq_records(fname, size=128000000):
 def check_command(cmd):
     if sp.call(cmd, shell=True) != 0:
         sys.stderr.write("Required command {} not found in the path!\n".format(cmd.split(" ")[0]))
+
+
+def check_min_hmmer_version(major, minor):
+    ver_line = sp.check_output("nhmmscan -h | grep '^# HMMER'", shell=True).decode()
+    tmp = ver_line.split("HMMER")[1].strip().split(" ")[0].split(".")
+    f_major, f_minor = int(tmp[0]), int(tmp[1])
+    if f_major < major:
+        raise Exception("Insufficient major HMMER version: " + str(f_major))
+    if f_minor < minor:
+        raise Exception("Insufficient minor HMMER version: " + str(f_minor))
