@@ -76,12 +76,16 @@ def _new_stats():
     st["RescueHitNr"] = defaultdict(int)
     st["UnclassHitNr"] = defaultdict(int)
     st["Unusable"] = defaultdict(int)
+    st["Hits"] = defaultdict(int)
     st["LenFail"] = 0
     return st
 
 
-def _update_stats(st, d_fh,  segments, hits, usable_len, read):
+def _update_stats(st, d_fh, segments, hits, usable_len, read):
     "Update stats dictionary with properties of a read"
+    if len(hits) > 0:
+        h = ",".join([x.Query for x in hits])
+        st["Hits"][h] += 1
     if len(segments) == 0:
         st["Classification"]["Unusable"] += 1
         st["UnclassHitNr"][len(hits)] += 1
@@ -137,6 +141,10 @@ def _process_stats(st):
         res["Value"] += [v]
     for k, v in sorted(st['Unusable'].items(), key=lambda x: x[0]):
         res["Category"] += ["Unusable"]
+        res["Name"] += [k]
+        res["Value"] += [v]
+    for k, v in sorted(st['Hits'].items(), key=lambda x: x[0]):
+        res["Category"] += ["Hits"]
         res["Name"] += [k]
         res["Value"] += [v]
     res = pd.DataFrame(res)
