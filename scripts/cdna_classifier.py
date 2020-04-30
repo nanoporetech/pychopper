@@ -39,6 +39,8 @@ parser.add_argument(
 parser.add_argument(
     '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
 parser.add_argument(
+    '-l', metavar='len_fail_output', type=str, default=None, help="Write fragments failing the length filter in this file.")
+parser.add_argument(
     '-w', metavar='rescue_output', type=str, default=None, help="Write rescued reads to this file.")
 parser.add_argument(
     '-S', metavar='stats_output', type=str, default="cdna_classifier_report.tsv", help="Write statistics to this file.")
@@ -266,6 +268,10 @@ if __name__ == '__main__':
     if args.u is not None:
         u_fh = open(args.u, "w")
 
+    l_fh = None
+    if args.l is not None:
+        l_fh = open(args.l, "w")
+
     w_fh = None
     if args.w is not None:
         w_fh = open(args.w, "w")
@@ -371,9 +377,9 @@ if __name__ == '__main__':
                 if args.u is not None and len(segments) == 0:
                     seu.writefq(read, u_fh)
                 for trim_read in chopper.segments_to_reads(read, segments, args.p):
-                    if args.u is not None and len(trim_read.Seq) < args.z:
+                    if args.L is not None and len(trim_read.Seq) < args.z:
                         st["LenFail"] += 1
-                        seu.writefq(read, u_fh)
+                        seu.writefq(read, l_fh)
                         continue
                     if len(segments) == 1:
                         seu.writefq(trim_read, out_fh)
@@ -388,7 +394,8 @@ if __name__ == '__main__':
     fail_nr = rfq_sup["total"] - rfq_sup["pass"]
     fail_pc = (fail_nr * 100 / rfq_sup["total"])
     st["QcFail"] = fail_nr
-    sys.stderr.write("Reads failing mean quality filter (Q < {}): {} ({:.2f}%)\n".format(args.Q, fail_nr, fail_pc))
+    sys.stderr.write("Input reads failing mean quality filter (Q < {}): {} ({:.2f}%)\n".format(args.Q, fail_nr, fail_pc))
+    sys.stderr.write("Output fragments failing length filter (length < {}): {}\n".format(args.z, st["LenFail"]))
 
     # Save stats as TSV:
     stdf = None
@@ -402,7 +409,7 @@ if __name__ == '__main__':
     if args.S is not None:
         stdf.to_csv(args.S, sep="\t", index=False)
 
-    for fh in (in_fh, out_fh, u_fh, w_fh, a_fh, d_fh):
+    for fh in (in_fh, out_fh, u_fh, l_fh, w_fh, a_fh, d_fh):
         if fh is None:
             continue
         fh.flush()
