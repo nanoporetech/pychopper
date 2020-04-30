@@ -49,12 +49,15 @@ def reverse_complement(seq):
     return reduce(lambda x, y: x + y, map(base_complement, seq[::-1]))
 
 
-def readfq(fp, sample=None, min_qual=None):  # this is a generator function
+def readfq(fp, sample=None, min_qual=None, rfq_sup={}):  # this is a generator function
     """
     Below function taken from https://github.com/lh3/readfq/blob/master/readfq.py
     Much faster parsing of large files compared to Biopyhton.
     """
-
+    sup = ("out_fq" in rfq_sup) and (rfq_sup["out_fq"] is not None)
+    tsup = "total" in rfq_sup
+    if sup:
+        fh = open(rfq_sup["out_fq"], "w")
     last = None  # this is a buffer keeping the last unprocessed line
     while True:  # mimic closure; is it a bad idea?
         if not last:  # the first record or a record following a fastq
@@ -72,6 +75,8 @@ def readfq(fp, sample=None, min_qual=None):  # this is a generator function
             seqs.append(l[:-1])
         if not last or last[0] != '+':  # this is a fasta record
             if sample is None or (random() < sample):
+                if tsup:
+                    rfq_sup["total"] += 1
                 yield Seq(name.split(" ", 1)[0], name, ''.join(seqs), None)  # yield a fasta record
             if not last:
                 break
@@ -84,13 +89,25 @@ def readfq(fp, sample=None, min_qual=None):  # this is a generator function
                     last = None
                     if sample is None or (random() < sample):
                         quals = "".join(seqs)
+                        oseq = Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals)
+                        if tsup:
+                            rfq_sup["total"] += 1
                         if not (min_qual is not None and mean_qual(quals) < min_qual):
-                            yield Seq(Id=name.split(" ", 1)[0], Name=name, Seq=seq, Qual=quals)  # yield a fastq record
+                            if tsup:
+                                rfq_sup["pass"] += 1
+                            yield oseq
+                        else:
+                            if sup:
+                                writefq(oseq, fh)
                     break
             if last:  # reach EOF before reading enough quality
                 if sample is None or (random() < sample):
                     yield Seq(name.split(" ", 1)[0], name, seq, None)  # yield a fasta record instead
                 break
+
+    if sup:
+        fh.flush()
+        fh.close()
 
 
 def writefq(r, fh):

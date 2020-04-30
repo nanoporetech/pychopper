@@ -43,6 +43,8 @@ parser.add_argument(
 parser.add_argument(
     '-S', metavar='stats_output', type=str, default="cdna_classifier_report.tsv", help="Write statistics to this file.")
 parser.add_argument(
+    '-K', metavar='qc_fail_output', type=str, default=None, help="Write reads failing mean quality filter to this file.")
+parser.add_argument(
     '-Y', metavar='autotune_nr', type=float, default=10000, help="Approximate number of reads used for tuning the cutoff parameter (10000).")
 parser.add_argument(
     '-L', metavar='autotune_samples', type=int, default=30, help="Number of samples taken when tuning cutoff parameter (30).")
@@ -317,8 +319,9 @@ if __name__ == '__main__':
     sys.stderr.write("Processing the whole dataset using a batch size of {}:\n".format(args.B))
     pbar = tqdm.tqdm(total=input_size)
     min_batch_size = max(int(args.B / args.t), 1)
+    rfq_sup = {"out_fq": args.K, "pass": 0, "total": 0}
     with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
-        for batch in utils.batch(seu.readfq(in_fh, min_qual=args.Q), args.B):
+        for batch in utils.batch(seu.readfq(in_fh, min_qual=args.Q, rfq_sup=rfq_sup), args.B):
             for read, (segments, hits, usable_len) in backend(batch, executor, q=args.q, mb=min_batch_size):
                 if args.A is not None:
                     for h in hits:
@@ -339,6 +342,11 @@ if __name__ == '__main__':
                     pbar.update(seu.record_size(read, 'fastq'))
                 else:
                     pbar.update(1)
+    pbar.close()
+    sys.stderr.write("Finished processing file: {}\n".format(args.input_fastx))
+    fail_nr = rfq_sup["total"] - rfq_sup["pass"]
+    fail_pc = (fail_nr * 100 / rfq_sup["total"])
+    sys.stderr.write("Reads failing mean quality filter (Q < {}): {} ({:.2f}%)\n".format(args.Q, fail_nr, fail_pc))
 
     # Save stats as TSV:
     stdf = None
@@ -358,5 +366,3 @@ if __name__ == '__main__':
 
     if args.r is not None:
         _plot_stats(stdf, args.r)
-
-    pbar.close()
