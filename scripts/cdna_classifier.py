@@ -238,6 +238,7 @@ if __name__ == '__main__':
 
     if args.m == "phmm":
         utils.check_command("nhmmscan -h > /dev/null")
+        utils.check_min_hmmer_version(3, 2)
 
     CONFIG = "+:SSP,-VNP|-:VNP,-SSP"
     if args.c is not None:
