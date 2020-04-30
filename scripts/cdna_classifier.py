@@ -78,11 +78,14 @@ def _new_stats():
     st["Unusable"] = defaultdict(int)
     st["Hits"] = defaultdict(int)
     st["LenFail"] = 0
+    st["QcFail"] = 0
+    st["PassReads"] = 0
     return st
 
 
 def _update_stats(st, d_fh, segments, hits, usable_len, read):
     "Update stats dictionary with properties of a read"
+    st["PassReads"] += 1
     if len(hits) > 0:
         h = ",".join([x.Query for x in hits])
         st["Hits"][h] += 1
@@ -112,9 +115,15 @@ def _update_stats(st, d_fh, segments, hits, usable_len, read):
 def _process_stats(st):
     "Convert stats dictionary into a data frame"
     res = OrderedDict([("Category", []), ("Name", []), ("Value", [])])
-    res["Category"] += ["LenFail"]
+    res["Category"] += ["ReadStats"]
+    res["Name"] += ["PassReads"]
+    res["Value"] += [st["PassReads"]]
+    res["Category"] += ["ReadStats"]
     res["Name"] += ["LenFail"]
     res["Value"] += [st["LenFail"]]
+    res["Category"] += ["ReadStats"]
+    res["Name"] += ["QcFail"]
+    res["Value"] += [st["QcFail"]]
     for k, v in st['Classification'].items():
         res["Category"] += ["Classification"]
         res["Name"] += [k]
@@ -143,12 +152,36 @@ def _process_stats(st):
         res["Category"] += ["Unusable"]
         res["Name"] += [k]
         res["Value"] += [v]
-    for k, v in sorted(st['Hits'].items(), key=lambda x: x[0]):
+    for k, v in sorted(st['Hits'].items(), key=lambda x: x[1], reverse=True):
         res["Category"] += ["Hits"]
         res["Name"] += [k]
         res["Value"] += [v]
     res = pd.DataFrame(res)
     return res
+
+
+def _detect_anomalies(st, config):
+    raw_anom = []
+    total = st["PassReads"]
+    for k, v in sorted(st['Hits'].items(), key=lambda x: x[1], reverse=True):
+        x = tuple(k.split(","))
+        if len(x) != 2:
+            raw_anom.append((k, v))
+        elif x not in config:
+            raw_anom.append((k, v))
+    anom = []
+    for tmp in raw_anom:
+        pc = tmp[1] * 100.0 / total
+        if pc >= 1:
+            anom.append((tmp[0], tmp[1], pc))
+    if len(anom) > 0:
+        sys.stderr.write("Detected {} potential artefactual primer configurations:\n".format(len(anom)))
+        ml = max([len(t[0]) for t in anom])
+        mn = max([len(str(t[1])) for t in anom])
+        sys.stderr.write(("{:" + str(ml) + "}\t{:" + str(mn) + "}\t{}\n").format("Configuration", "NrReads", "PercentReads"))
+        for x in anom:
+            fs = "{:" + str(ml) + "}\t{:" + str(mn) + "}\t{:.2f}%\n"
+            sys.stderr.write(fs.format(x[0], str(x[1]), x[2]))
 
 
 def _plot_pd_bars(df, title, report, alpha=0.7, xrot=0, ann=False):
@@ -354,6 +387,7 @@ if __name__ == '__main__':
     sys.stderr.write("Finished processing file: {}\n".format(args.input_fastx))
     fail_nr = rfq_sup["total"] - rfq_sup["pass"]
     fail_pc = (fail_nr * 100 / rfq_sup["total"])
+    st["QcFail"] = fail_nr
     sys.stderr.write("Reads failing mean quality filter (Q < {}): {} ({:.2f}%)\n".format(args.Q, fail_nr, fail_pc))
 
     # Save stats as TSV:
@@ -362,6 +396,8 @@ if __name__ == '__main__':
         stdf = _process_stats(st)
         if tune_df is not None:
             stdf = stdf.append(pd.DataFrame(tune_df))
+
+    _detect_anomalies(st, config)
 
     if args.S is not None:
         stdf.to_csv(args.S, sep="\t", index=False)
