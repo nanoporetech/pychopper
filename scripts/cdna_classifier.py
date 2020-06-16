@@ -380,7 +380,7 @@ if __name__ == '__main__':
                 for trim_read in chopper.segments_to_reads(read, segments, args.p):
                     if args.l is not None and len(trim_read.Seq) < args.z:
                         st["LenFail"] += 1
-                        seu.writefq(read, l_fh)
+                        seu.writefq(trim_read, l_fh)
                         continue
                     if len(segments) == 1:
                         seu.writefq(trim_read, out_fh)
