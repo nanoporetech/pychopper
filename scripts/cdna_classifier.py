@@ -227,7 +227,7 @@ def _plot_stats(st, pdf):
     _plot_pd_bars(st.loc[st.Category == "UnclassHitNr", ].copy(), "Number of hits in unclassified reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueHitNr", ].copy(), "Number of hits in rescued reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueSegmentNr", ].copy(), "Number of usable segments per rescued read", R)
-    if args.q is None:
+    if q_bak is None:
         _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4f}".format(args.q), R, vline=args.q)
     udf = st.loc[st.Category == "Unusable", ].copy()
     udf.Name = np.log10(1.0 + np.array(udf.Name, dtype=float))
@@ -314,6 +314,7 @@ if __name__ == '__main__':
     # Pick the -q maximizing the number of classified reads using frid search:
     nr_records = None
     tune_df = None
+    q_bak = args.q
     if args.q is None:
         nr_cutoffs = args.L
         cutoffs = np.linspace(0.0, 1.0, num=nr_cutoffs)
