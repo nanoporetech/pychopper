@@ -29,6 +29,8 @@ parser.add_argument(
 parser.add_argument(
     '-c', metavar='config_file', type=str, default=None, help="File to specify primer configurations for each direction (None).")
 parser.add_argument(
+    '-k', metavar='kit', type=str, default="PCS110", help="Use primer sequences from this kit (PCS110).")
+parser.add_argument(
     '-q', metavar='cutoff', type=float, default=None, help="Cutoff parameter (autotuned).")
 parser.add_argument(
     '-Q', metavar='min_qual', type=float, default=7.0, help="Minimum mean base quality (7.0).")
@@ -244,11 +246,14 @@ if __name__ == '__main__':
     if args.c is not None:
         CONFIG = open(args.c, "r").readline().strip()
 
+    kits = {"PCS109": {"HMM": os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas"), }, "PCS110": {
+                                           "HMM": os.path.join(os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "PCS110_primers.fas")}}
+
     if args.g is None:
-        args.g = os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm")
+        args.g = kits[args.k]["HMM"]
 
     if args.b is None:
-        args.b = os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas")
+        args.b = kits[args.k]["FAS"]
 
     if args.x is not None and args.x in ('DCS109'):
         if args.x == "DCS109":
