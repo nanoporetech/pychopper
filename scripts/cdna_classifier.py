@@ -260,6 +260,7 @@ if __name__ == '__main__':
             CONFIG = "-:VNP,-VNP"
 
     config = utils.parse_config_string(CONFIG)
+    sys.stderr.write("Using kit: {}\n".format(args.k))
     sys.stderr.write("Configurations to consider: \"{}\"\n".format(CONFIG))
 
     in_fh = sys.stdin
