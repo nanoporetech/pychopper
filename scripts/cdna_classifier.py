@@ -228,7 +228,7 @@ def _plot_stats(st, pdf):
     _plot_pd_bars(st.loc[st.Category == "RescueHitNr", ].copy(), "Number of hits in rescued reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueSegmentNr", ].copy(), "Number of usable segments per rescued read", R)
     if q_bak is None:
-        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4f}".format(args.q), R, vline=args.q)
+        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4g}".format(args.q), R, vline=args.q)
     udf = st.loc[st.Category == "Unusable", ].copy()
     udf.Name = np.log10(1.0 + np.array(udf.Name, dtype=float))
     _plot_pd_line(udf, "Log10 length distribution of trimmed away sequences.", R)
@@ -363,7 +363,7 @@ if __name__ == '__main__':
         tune_df["Value"] += [args.q]
         if best_qi == (len(class_reads) - 1):
             sys.stderr.write("Best cuttoff value is at the edge of the search interval! Using tuned value is not safe! Please pick a q value manually and QC your data!\n")
-        sys.stderr.write("Best cutoff (q) value is {:.4f} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
+        sys.stderr.write("Best cutoff (q) value is {:.4g} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
 
     if nr_records is not None:
         input_size = nr_records
