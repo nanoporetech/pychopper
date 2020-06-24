@@ -176,7 +176,7 @@ def _detect_anomalies(st, config):
     anom = []
     for tmp in raw_anom:
         pc = tmp[1] * 100.0 / total
-        if pc >= 1:
+        if pc >= 3.0:
             anom.append((tmp[0], tmp[1], pc))
     if len(anom) > 0:
         sys.stderr.write("Detected {} potential artefactual primer configurations:\n".format(len(anom)))
@@ -312,7 +312,7 @@ if __name__ == '__main__':
     else:
         raise Exception("Invalid backend!")
 
-    # Pick the -q maximizing the number of classified reads using frid search:
+    # Pick the -q maximizing the number of classified reads using grid search:
     nr_records = None
     tune_df = None
     q_bak = args.q
