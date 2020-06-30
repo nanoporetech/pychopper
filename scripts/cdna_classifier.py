@@ -221,7 +221,16 @@ def _plot_pd_line(df, title, report, alpha=0.7, xrot=0, vline=None):
 def _plot_stats(st, pdf):
     "Generate plots and save to report PDF"
     R = report.Report(pdf)
-    _plot_pd_bars(st.loc[st.Category == "Classification", ].copy(), "Classification of output reads", R, ann=True)
+    rs = st.loc[st.Category == "Classification", ]
+    _plot_pd_bars(rs.copy(), "Classification of output reads", R, ann=True)
+    found, rescue, unusable = float(rs.loc[rs.Name == "Primers_found", ].Value), float(rs.loc[rs.Name == "Rescue", ].Value), float(rs.loc[rs.Name == "Unusable", ].Value)
+    total = found + rescue + unusable
+    found = found / total * 100
+    rescue = rescue / total * 100
+    unusable = unusable / total * 100
+    sys.stderr.write("-----------------------------------\n")
+    sys.stderr.write("Reads with two primers:\t{:.2f}%\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, rescue, unusable))
+    sys.stderr.write("-----------------------------------\n")
     _plot_pd_bars(st.loc[st.Category == "Strand", ].copy(), "Strand of oriented reads", R, ann=True)
     _plot_pd_bars(st.loc[st.Category == "RescueStrand", ].copy(), "Strand of rescued reads", R, ann=True)
     _plot_pd_bars(st.loc[st.Category == "UnclassHitNr", ].copy(), "Number of hits in unclassified reads", R)
