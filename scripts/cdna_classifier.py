@@ -29,6 +29,8 @@ parser.add_argument(
 parser.add_argument(
     '-c', metavar='config_file', type=str, default=None, help="File to specify primer configurations for each direction (None).")
 parser.add_argument(
+    '-k', metavar='kit', type=str, default="PCS109", help="Use primer sequences from this kit (PCS109).")
+parser.add_argument(
     '-q', metavar='cutoff', type=float, default=None, help="Cutoff parameter (autotuned).")
 parser.add_argument(
     '-Q', metavar='min_qual', type=float, default=7.0, help="Minimum mean base quality (7.0).")
@@ -174,7 +176,7 @@ def _detect_anomalies(st, config):
     anom = []
     for tmp in raw_anom:
         pc = tmp[1] * 100.0 / total
-        if pc >= 1:
+        if pc >= 3.0:
             anom.append((tmp[0], tmp[1], pc))
     if len(anom) > 0:
         sys.stderr.write("Detected {} potential artefactual primer configurations:\n".format(len(anom)))
@@ -219,14 +221,23 @@ def _plot_pd_line(df, title, report, alpha=0.7, xrot=0, vline=None):
 def _plot_stats(st, pdf):
     "Generate plots and save to report PDF"
     R = report.Report(pdf)
-    _plot_pd_bars(st.loc[st.Category == "Classification", ].copy(), "Classification of output reads", R, ann=True)
+    rs = st.loc[st.Category == "Classification", ]
+    _plot_pd_bars(rs.copy(), "Classification of output reads", R, ann=True)
+    found, rescue, unusable = float(rs.loc[rs.Name == "Primers_found", ].Value), float(rs.loc[rs.Name == "Rescue", ].Value), float(rs.loc[rs.Name == "Unusable", ].Value)
+    total = found + rescue + unusable
+    found = found / total * 100
+    rescue = rescue / total * 100
+    unusable = unusable / total * 100
+    sys.stderr.write("-----------------------------------\n")
+    sys.stderr.write("Reads with two primers:\t{:.2f}%\nRescued reads:\t\t{:.2f}%\nUnusable reads:\t\t{:.2f}%\n".format(found, rescue, unusable))
+    sys.stderr.write("-----------------------------------\n")
     _plot_pd_bars(st.loc[st.Category == "Strand", ].copy(), "Strand of oriented reads", R, ann=True)
     _plot_pd_bars(st.loc[st.Category == "RescueStrand", ].copy(), "Strand of rescued reads", R, ann=True)
     _plot_pd_bars(st.loc[st.Category == "UnclassHitNr", ].copy(), "Number of hits in unclassified reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueHitNr", ].copy(), "Number of hits in rescued reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueSegmentNr", ].copy(), "Number of usable segments per rescued read", R)
-    if args.q is None:
-        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4f}".format(args.q), R, vline=args.q)
+    if q_bak is None:
+        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4g}".format(args.q), R, vline=args.q)
     udf = st.loc[st.Category == "Unusable", ].copy()
     udf.Name = np.log10(1.0 + np.array(udf.Name, dtype=float))
     _plot_pd_line(udf, "Log10 length distribution of trimmed away sequences.", R)
@@ -244,17 +255,21 @@ if __name__ == '__main__':
     if args.c is not None:
         CONFIG = open(args.c, "r").readline().strip()
 
+    kits = {"PCS109": {"HMM": os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas"), }, "PCS110": {
+                                           "HMM": os.path.join(os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "PCS110_primers.fas")}}
+
     if args.g is None:
-        args.g = os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm")
+        args.g = kits[args.k]["HMM"]
 
     if args.b is None:
-        args.b = os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas")
+        args.b = kits[args.k]["FAS"]
 
     if args.x is not None and args.x in ('DCS109'):
         if args.x == "DCS109":
             CONFIG = "-:VNP,-VNP"
 
     config = utils.parse_config_string(CONFIG)
+    sys.stderr.write("Using kit: {}\n".format(args.k))
     sys.stderr.write("Configurations to consider: \"{}\"\n".format(CONFIG))
 
     in_fh = sys.stdin
@@ -306,9 +321,10 @@ if __name__ == '__main__':
     else:
         raise Exception("Invalid backend!")
 
-    # Pick the -q maximizing the number of classified reads using frid search:
+    # Pick the -q maximizing the number of classified reads using grid search:
     nr_records = None
     tune_df = None
+    q_bak = args.q
     if args.q is None:
         nr_cutoffs = args.L
         cutoffs = np.linspace(0.0, 1.0, num=nr_cutoffs)
@@ -356,7 +372,7 @@ if __name__ == '__main__':
         tune_df["Value"] += [args.q]
         if best_qi == (len(class_reads) - 1):
             sys.stderr.write("Best cuttoff value is at the edge of the search interval! Using tuned value is not safe! Please pick a q value manually and QC your data!\n")
-        sys.stderr.write("Best cutoff (q) value is {:.4f} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
+        sys.stderr.write("Best cutoff (q) value is {:.4g} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
 
     if nr_records is not None:
         input_size = nr_records
