@@ -29,7 +29,7 @@ parser.add_argument(
 parser.add_argument(
     '-c', metavar='config_file', type=str, default=None, help="File to specify primer configurations for each direction (None).")
 parser.add_argument(
-    '-k', metavar='kit', type=str, default="PCS110", help="Use primer sequences from this kit (PCS110).")
+    '-k', metavar='kit', type=str, default="PCS109", help="Use primer sequences from this kit (PCS109).")
 parser.add_argument(
     '-q', metavar='cutoff', type=float, default=None, help="Cutoff parameter (autotuned).")
 parser.add_argument(
