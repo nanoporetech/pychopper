@@ -58,11 +58,13 @@ Issue `make help` to get a list of `make` targets.
 
 ```
 usage: cdna_classifier.py [-h] [-b primers] [-g phmm_file] [-c config_file]
-                          [-q cutoff] [-r report_pdf] [-u unclass_output]
-                          [-w rescue_output] [-S stats_output]
+                          [-k kit] [-q cutoff] [-Q min_qual] [-z min_len]
+                          [-r report_pdf] [-u unclass_output]
+                          [-l len_fail_output] [-w rescue_output]
+                          [-S stats_output] [-K qc_fail_output]
                           [-Y autotune_nr] [-L autotune_samples]
                           [-A scores_output] [-m method] [-x rescue] [-p]
-                          [-t threads] [-B batch_size]
+                          [-t threads] [-B batch_size] [-D read stats]
                           input_fastx output_fastx
 
 Tool to identify, orient and rescue full-length cDNA reads.
@@ -77,11 +79,16 @@ optional arguments:
   -g phmm_file         File with custom profile HMMs (None).
   -c config_file       File to specify primer configurations for each
                        direction (None).
+  -k kit               Use primer sequences from this kit (PCS109).
   -q cutoff            Cutoff parameter (autotuned).
+  -Q min_qual          Minimum mean base quality (7.0).
+  -z min_len           Minimum segment length (50).
   -r report_pdf        Report PDF (cdna_classifier_report.pdf).
   -u unclass_output    Write unclassified reads to this file.
+  -l len_fail_output   Write fragments failing the length filter in this file.
   -w rescue_output     Write rescued reads to this file.
   -S stats_output      Write statistics to this file.
+  -K qc_fail_output    Write reads failing mean quality filter to this file.
   -Y autotune_nr       Approximate number of reads used for tuning the cutoff
                        parameter (10000).
   -L autotune_samples  Number of samples taken when tuning cutoff parameter
