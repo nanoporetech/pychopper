@@ -9,6 +9,7 @@ import pandas as pd
 from collections import OrderedDict, defaultdict
 import concurrent.futures
 import tqdm
+import gzip
 
 from pychopper import seq_utils as seu
 from pychopper import utils
@@ -244,6 +245,12 @@ def _plot_stats(st, pdf):
     R.close()
 
 
+def _opener(filename, mode, encoding='utf8'):
+    if filename.endswith('.gz'):
+        return gzip.open(filename, mode + 't', encoding=encoding)
+    else:
+        return open(filename, mode, encoding=encoding)
+
 if __name__ == '__main__':
     args = parser.parse_args()
 
@@ -274,7 +281,7 @@ if __name__ == '__main__':
 
     in_fh = sys.stdin
     if args.input_fastx != '-':
-        in_fh = open(args.input_fastx, "r")
+        in_fh = _opener(args.input_fastx, "r")
 
     out_fh = sys.stdout
     if args.output_fastx != '-':
@@ -333,7 +340,7 @@ if __name__ == '__main__':
             cutoffs = np.linspace(10**-5, 5.0, num=nr_cutoffs)
         class_reads = []
         class_readLens = []
-        nr_records = utils.count_fastq_records(args.input_fastx)
+        nr_records = utils.count_fastq_records(args.input_fastx, opener=_opener)
         opt_batch = int(nr_records / args.t)
         if opt_batch < args.B:
             args.B = opt_batch
@@ -344,7 +351,7 @@ if __name__ == '__main__':
             target_prop = 1.0
         sys.stderr.write("Counting fastq records in input file: {}\n".format(args.input_fastx))
         sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
-        read_sample = list(seu.readfq(open(args.input_fastx, "r"), sample=target_prop, min_qual=args.Q))
+        read_sample = list(seu.readfq(_opener(args.input_fastx, "r"), sample=target_prop, min_qual=args.Q))
         sys.stderr.write("Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%) passing quality filters (Q >= {}).\n".format(len(read_sample), target_prop * 100.0, args.Q))
         sys.stderr.write("Optimizing over {} cutoff values.\n".format(args.L))
         for qv in tqdm.tqdm(cutoffs):

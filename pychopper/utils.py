@@ -50,8 +50,8 @@ def hit2bed(hit, read):
     return bed_line
 
 
-def count_fastq_records(fname, size=128000000):
-    fh = open(fname, "r")
+def count_fastq_records(fname, size=128000000, opener=open):
+    fh = opener(fname, "r")
     count = 0
     while True:
         b = fh.read(size)
