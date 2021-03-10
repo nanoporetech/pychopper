@@ -68,7 +68,7 @@ parser.add_argument(
 parser.add_argument(
     '-D', metavar='read stats', type=str, default=None, help="Tab separated file with per-read stats (None).")
 parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
-parser.add_argument('output_fastx', metavar='output_fastx', type=str, help="Output file.")
+parser.add_argument('output_fastx', metavar='output_fastx', nargs="?", type=str, default="-", help="Output file.")
 
 
 def _new_stats():
