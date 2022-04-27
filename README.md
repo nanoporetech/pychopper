@@ -13,7 +13,7 @@ Background
 The general approach of Pychopper v2 is the following:
 
 - Pychopper first identifies alignment hits of the primers across the length of the sequence. The default method for doing this is using `nhmmscan` with the pre-trained strand specific profile HMMs, included with the package. Alternatively, one can use the `edlib` backend, which uses a combination of global and local alignment to identify the primers within the read.
-- After identifying the primer hits by either of the backends, the reads are divided into segments defined by two consecutive primer hits. The score of a segment is its length if the configuration of the flanking primer hits is valid (such as `SPP,-VNP` for forward reads) or zero otherwise.
+- After identifying the primer hits by either of the backends, the reads are divided into segments defined by two consecutive primer hits. The score of a segment is its length if the configuration of the flanking primer hits is valid (such as `SSP,-VNP` for forward reads) or zero otherwise.
 - The segments are assigned to rescued reads using a dynamic programming algorithm maximizing the sum of used segment scores (hence the amount of rescued bases). A crucial observation about the algorithm is that if a segment is included as a rescued read, then the next segment must be excluded as one of the primer hits defining it was "used up" by the previous segment. This put constraints on the dynamic programming graph, as illustrated in the figure below. The arrows in read define the optimal path for rescuing two fused reads with the a total score of `l1 + l3`.
 
 ![dp_segmentation](/dp_segmentation.png)
