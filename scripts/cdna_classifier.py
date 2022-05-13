@@ -251,6 +251,7 @@ def _opener(filename, mode, encoding='utf8'):
     else:
         return open(filename, mode, encoding=encoding)
 
+
 if __name__ == '__main__':
     args = parser.parse_args()
 
@@ -282,13 +283,19 @@ if __name__ == '__main__':
                 os.path.dirname(primer_data.__file__), "PCS111_primers.fas")}
     }
 
-    # put a check here. Do not allow -b (primers) option of we are using hmms
-
     if args.g is None:
         args.g = kits[args.k]["HMM"]
+    elif args.m != 'phmm':
+        sys.exit(
+            'if using -g option, phmm backend should be used (-m phmm)'
+        )
 
     if args.b is None:
         args.b = kits[args.k]["FAS"]
+    elif args.m != 'edlib':
+        sys.exit(
+            'if using -b option, edlib backend should be used (-m edlib)'
+        )
 
     if args.x is not None and args.x in ('DCS109'):
         if args.x == "DCS109":
