@@ -251,6 +251,7 @@ def _opener(filename, mode, encoding='utf8'):
     else:
         return open(filename, mode, encoding=encoding)
 
+
 if __name__ == '__main__':
     args = parser.parse_args()
 
@@ -262,14 +263,39 @@ if __name__ == '__main__':
     if args.c is not None:
         CONFIG = open(args.c, "r").readline().strip()
 
-    kits = {"PCS109": {"HMM": os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas"), }, "PCS110": {
-                                           "HMM": os.path.join(os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "PCS110_primers.fas")}}
+    kits = {
+        "PCS109": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas"),
+        },
+        "PCS110": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "PCS110_primers.fas")
+        },
+        "PCS111": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "PCS111_primers.fas")}
+    }
 
     if args.g is None:
         args.g = kits[args.k]["HMM"]
+    elif args.m != 'phmm':
+        sys.exit(
+            'if using -g option, phmm backend should be used (-m phmm)'
+        )
 
     if args.b is None:
         args.b = kits[args.k]["FAS"]
+    elif args.m != 'edlib':
+        sys.exit(
+            'if using -b option, edlib backend should be used (-m edlib)'
+        )
 
     if args.x is not None and args.x in ('DCS109'):
         if args.x == "DCS109":
