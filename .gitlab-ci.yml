@@ -45,9 +45,10 @@ stages:
 
 test:
     stage: test
-    when: manual # Switch this off for now
+    rules:
+        when: never # Switch this off for now
     script:
-        - *prep-image
+        - *prep-image #?
         - make test
         - make docs
         - make sdist
