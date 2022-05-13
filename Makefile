@@ -1,72 +1,52 @@
-MODULE=pychopper
+.PHONY: develop docs
 
-.PHONY: clean clean-test clean-pyc clean-build docs com help 
+PYTHON ?= python3
 
-.DEFAULT_GOAL := help
+IN_VENV=. ./venv/bin/activate
 
-define PRINT_HELP_PYSCRIPT
-import re, sys
+venv/bin/activate:
+	test -d venv || $(PYTHON) -m venv venv
+	${IN_VENV} && pip install pip --upgrade
+	${IN_VENV} && pip install -r requirements.txt
 
-for line in sys.stdin:
-	match = re.match(r'^([a-zA-Z_-]+):.*?## (.*)$$', line)
-	if match:
-		target, help = match.groups()
-		print("%-20s %s" % (target, help))
-endef
-export PRINT_HELP_PYSCRIPT
+develop: venv/bin/activate
+	${IN_VENV} && python setup.py develop
 
-help:
-	@python -c "$$PRINT_HELP_PYSCRIPT" < $(MAKEFILE_LIST)
+test: venv/bin/activate
+	${IN_VENV} && pip install flake8 flake8-rst-docstrings flake8-docstrings flake8-import-order flake8-forbid-visual-indent
+	${IN_VENV} && flake8 aplanat \
+		--import-order-style google --application-import-names aplanat \
+		--statistics
+	# demo should run without error
+	${IN_VENV} && python setup.py install
+	${IN_VENV} && aplanat demo
 
-clean: clean-build clean-pyc clean-test ## remove all build, test, coverage and Python artifacts
+IN_BUILD=. ./pypi_build/bin/activate
+pypi_build/bin/activate:
+	test -d pypi_build || $(PYTHON) -m venv pypi_build --prompt "(pypi) "
+	${IN_BUILD} && pip install pip --upgrade
+	${IN_BUILD} && pip install --upgrade pip setuptools twine wheel readme_renderer[md] keyrings.alt
 
+.PHONY: sdist
+sdist: pypi_build/bin/activate
+	${IN_BUILD} && python setup.py sdist
 
-clean-build: ## remove build artifacts
-	rm -fr build/
-	rm -fr dist/
-	rm -fr .eggs/
-	find . -name '*.egg-info' -exec rm -fr {} +
-	find . -name '*.egg' -exec rm -f {} +
+.PHONY: clean
+clean:
+	rm -rf __pycache__ dist build venv aplanat.egg-info tmp docs/_build
 
-clean-pyc: ## remove Python file artifacts
-	find . -name '*.pyc' -exec rm -f {} +
-	find . -name '*.pyo' -exec rm -f {} +
-	find . -name '*~' -exec rm -f {} +
-	find . -name '__pycache__' -exec rm -fr {} +
-
-clean-test: ## remove test and coverage artifacts
-	rm -f .coverage
-	rm -fr htmlcov/
-
-lint: ## check style with flake8
-	@(flake8 --max-line-length=120 $(MODULE) | grep -v "E501 line too long") || true
-	@(flake8 --max-line-length=120 scripts/*.py | grep -v "E501 line too long") || true
-
-test: ## run tests quickly with the default Python
-	py.test
-
-coverage: ## check code coverage quickly with the default Python
-		coverage run --source $(MODULE) --omit="*/tests/*,*__init__.py" `which py.test`
-		coverage report -m --omit="*/tests/*,*__init__.py"
-		coverage html
-
-docs: ## generate Sphinx HTML documentation, including API docs
-	@cd docs; make clean html
-
-servedocs: docs ## compile the docs watching for changes
-	watchmedo shell-command -p '*.rst' -c '$(MAKE) -C docs html' -R -D .
-
-release: clean ## package and upload a release
-	python setup.py sdist upload
-	python setup.py bdist_wheel upload
-
-dist: clean ## builds source and wheel package
-	python setup.py sdist
-	python setup.py bdist_wheel
-	ls -l dist
-
-install: clean ## install the package to the active Python's site-packages
-	python setup.py install
-
-com: ## commit all changes to git
-	git commit -a
+# Documentation
+SPHINXOPTS    =
+SPHINXBUILD   = sphinx-build
+BUILDDIR      = _build
+PAPER         =
+PAPEROPT_a4     = -D latex_paper_size=a4
+PAPEROPT_letter = -D latex_paper_size=letter
+ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+DOCSRC = docs
+docs: venv/bin/activate
+	${IN_VENV} && pip install sphinx sphinx_rtd_theme sphinx-argparse
+	${IN_VENV} && cd $(DOCSRC) && $(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	@echo
+	@echo "Build finished. The HTML pages are in $(DOCSRC)/$(BUILDDIR)/html."
+	touch $(DOCSRC)/$(BUILDDIR)/html/.nojekyll

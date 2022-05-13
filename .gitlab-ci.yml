@@ -1,25 +1,84 @@
-image: ubuntu:xenial
+include:
+    - project: "epi2melabs/ci-templates"
+      file: "push-github.yaml"
+    - project: "epi2melabs/ci-templates"
+      file: "push-conda.yaml"
+
+image: ${UBUNTUIMAGE}:20.04
+
+.prep-image: &prep-image |
+    export DEBIAN_FRONTEND=noninteractive
+    apt update -qq
+    apt install -y --no-install-recommends make wget python3-all-dev python3-venv 
+
 
 stages:
     - test
-    - pages
+    - build
+    - prerelease
     - release
+    - postrelease
 
-before_script:
-    - apt-get update
-    - apt-get remove python
-    - apt-get install -y python3 python3-pip make python3-numpy python3-matplotlib hmmer 
-    - update-alternatives --install /usr/bin/python python /usr/bin/python3 10
-    - alias python=python3; pip3 install --upgrade pip
-    - hash -r pip3
-    - alias python=python3; pip3 install sphinx sphinx-argparse sphinx_rtd_theme pytest pandas
-    - alias python=python3; pip3 install -e ./
+# Insist that the version in __init__.py matches the git tag
+.check-versions: &check-versions |
+    PYVER="v"$(grep "__version__ = " ${CI_PROJECT_NAME}/__init__.py | awk '{gsub("\"","",$3); print $3}')
+    TAGVER=${CI_COMMIT_TAG}
+    if [[ "${PYVER}" != "${TAGVER}" ]]; then
+        echo "Mismatching TAG and PACKAGE versions:"
+        echo " -     TAG:'$TAGVER'"
+        echo " - PACKAGE:'$TAGVER'"
+        exit 1
+    else
+        echo "TAG and PACKAGE versions agree: '${PYVER}'"
+    fi
 
-  
-do_testing:
-  stage: test
-  script:
-    - alias python=python3; make test
-  except:
-    - tags
-    
+# Insist a CHANGELOG entry has been made for tags
+.check-changelog: &check-changelog |
+    TAGVER=${CI_COMMIT_TAG}
+    MATCHES=$(grep -c "## \[${TAGVER}\]" CHANGELOG.md || exit 0)
+    if [[ "${MATCHES}" != "1" ]]; then
+        echo "Expected one match to '${CI_COMMIT_TAG}' in CHANGELOG, found ${MATCHES}"
+        exit 1
+    else
+        echo "Found CHANGELOG.md entry for tag"
+    fi
+
+test:
+    stage: test
+    script:
+        - *prep-image #?
+        - make test
+        - make docs
+        - make sdist
+    artifacts:
+        paths:
+            - dist/*.tar.gz
+
+deploy-checks:
+    stage: prerelease
+    script:
+        - *check-versions
+        - *check-changelog
+    rules:
+        - if: '$CI_COMMIT_TAG =~ /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/'
+
+deploy:pypi:
+    stage: release
+    script:
+        - *prep-image
+        - make pypi_build/bin/activate
+        - source pypi_build/bin/activate
+        - twine upload --non-interactive dist/*.tar.gz
+    rules:
+        - if: '$CI_COMMIT_TAG =~ /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/'
+
+conda:
+    extends:
+        - .deploy-conda
+    before_script:
+        - *prep-image
+        - export CONDA_PKG=${CI_PROJECT_NAME}
+        - export CONDA_PKG_VERSION=${CI_COMMIT_TAG/v/}
+        - cd conda
+
+# Don't need a mac conda package since the project is pure python
