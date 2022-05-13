@@ -80,5 +80,3 @@ conda:
         - export CONDA_PKG=${CI_PROJECT_NAME}
         - export CONDA_PKG_VERSION=${CI_COMMIT_TAG/v/}
         - cd conda
-
-# Don't need a mac conda package since the project is pure python
