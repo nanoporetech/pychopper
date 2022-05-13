@@ -19,7 +19,6 @@ test: venv/bin/activate
 #		--statistics
 	# demo should run without error
 	${IN_VENV} && python setup.py install
-	${IN_VENV} && pychopper demo
 
 IN_BUILD=. ./pypi_build/bin/activate
 pypi_build/bin/activate:
