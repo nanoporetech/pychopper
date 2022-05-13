@@ -47,7 +47,7 @@ test:
     stage: test
     when: manual # Switch this off for now
     script:
-        - *prep-image #?
+        - *prep-image
         - make test
         - make docs
         - make sdist

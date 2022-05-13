@@ -15,11 +15,9 @@ develop: venv/bin/activate
 test: venv/bin/activate
 	${IN_VENV} && pip install flake8 flake8-rst-docstrings flake8-docstrings flake8-import-order flake8-forbid-visual-indent
 	${IN_VENV} && flake8 pychopper \
-		--import-order-style google --application-import-names aplanat \
+		--import-order-style google --application-import-names pychopper \
 		--statistics
-	# demo should run without error
 	${IN_VENV} && python setup.py install
-	${IN_VENV} && aplanat demo
 
 IN_BUILD=. ./pypi_build/bin/activate
 pypi_build/bin/activate:
@@ -33,7 +31,7 @@ sdist: pypi_build/bin/activate
 
 .PHONY: clean
 clean:
-	rm -rf __pycache__ dist build venv aplanat.egg-info tmp docs/_build
+	rm -rf __pycache__ dist build venv pychopper.egg-info tmp docs/_build
 
 # Documentation
 SPHINXOPTS    =
