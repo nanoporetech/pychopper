@@ -46,7 +46,7 @@ stages:
 test:
     stage: test
     rules:
-        when: never # Switch this off for now
+    - when: never # Switch this off for now
     script:
         - *prep-image #?
         - make test
