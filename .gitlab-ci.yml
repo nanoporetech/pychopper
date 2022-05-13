@@ -45,6 +45,7 @@ stages:
 
 test:
     stage: test
+    when: manual # Switch this off for now
     script:
         - *prep-image #?
         - make test

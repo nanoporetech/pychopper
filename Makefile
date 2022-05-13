@@ -14,7 +14,7 @@ develop: venv/bin/activate
 
 test: venv/bin/activate
 	${IN_VENV} && pip install flake8 flake8-rst-docstrings flake8-docstrings flake8-import-order flake8-forbid-visual-indent
-	${IN_VENV} && flake8 aplanat \
+	${IN_VENV} && flake8 pychopper \
 		--import-order-style google --application-import-names aplanat \
 		--statistics
 	# demo should run without error
