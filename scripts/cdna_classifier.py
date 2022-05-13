@@ -262,8 +262,27 @@ if __name__ == '__main__':
     if args.c is not None:
         CONFIG = open(args.c, "r").readline().strip()
 
-    kits = {"PCS109": {"HMM": os.path.join(os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas"), }, "PCS110": {
-                                           "HMM": os.path.join(os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"), "FAS": os.path.join(os.path.dirname(primer_data.__file__), "PCS110_primers.fas")}}
+    kits = {
+        "PCS109": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "cDNA_SSP_VNP.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "cDNA_SSP_VNP.fas"),
+        },
+        "PCS110": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "PCS110_primers.fas")
+        },
+        "PCS111": {
+            "HMM": os.path.join(
+                os.path.dirname(phmm_data.__file__), "PCS110_primers.hmm"),
+            "FAS": os.path.join(
+                os.path.dirname(primer_data.__file__), "PCS111_primers.fas")}
+    }
+
+    # put a check here. Do not allow -b (primers) option of we are using hmms
 
     if args.g is None:
         args.g = kits[args.k]["HMM"]
