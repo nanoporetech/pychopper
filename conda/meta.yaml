@@ -19,7 +19,8 @@ requirements:
     - pip
     - python
   run:
-    - parasail
+    - edlib
+    - parasail-python
     - biopython
     - matplotlib
     - six

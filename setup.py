@@ -10,22 +10,6 @@ import pkg_resources
 with open('README.md') as readme_file:
     readme = readme_file.read()
 
-requirements = [
-    'edlib',
-    'parasail',
-    'matplotlib',
-    'seaborn',
-    'tqdm',
-    'six',
-    'pandas',
-    'pytest',
-    'sphinx',
-    'sphinx_rtd_theme',
-]
-
-test_requirements = [
-    # TODO: put package test requirements here
-]
 
 __pkg_name__ = 'pychopper'
 __author__ = 'cwright'
@@ -70,7 +54,7 @@ setup(
                  'pychopper'},
     package_data={'pychopper': ['primer_data/*.fas', 'phmm_data/*.*']},
     include_package_data=True,
-    install_requires=requirements,
+    install_requires=install_requires,
     zip_safe=False,
     keywords='pychopper',
     classifiers=[
@@ -79,6 +63,5 @@ setup(
         'Natural Language :: English',
         "Programming Language :: Python :: 3",
     ],
-    tests_require=test_requirements,
     scripts=[x for x in glob('scripts/*.py') if x != 'scripts/__init__.py']
 )

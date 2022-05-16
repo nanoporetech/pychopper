@@ -1,3 +1,4 @@
+edlib
 parasail
 biopython
 matplotlib
