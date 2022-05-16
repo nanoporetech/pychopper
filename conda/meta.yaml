@@ -27,6 +27,7 @@ requirements:
     - matplotlib
     - six
     - tqdm
+    - pandas
     - numpy
 
 test:
