@@ -3,11 +3,14 @@
 # {% set data = load_setup_py_data() %}
 
 package:
-  name: {{ environ.get('CONDA_PKG') }}
+  name: pychopper #{{ environ.get('CONDA_PKG') }}
   version: {{ environ.get('CONDA_PKG_VERSION') }}
 
 source:
     path: ../
+
+python:
+  - 3.8
 
 build:
   number: 0
@@ -21,12 +24,10 @@ requirements:
   run:
     - edlib
     - parasail-python
-    - biopython
     - matplotlib
     - six
     - tqdm
-    - pandas
-    - pytest
+    - numpy
 
 test:
   imports:
