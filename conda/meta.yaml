@@ -1,0 +1,46 @@
+
+# this doesn't work
+# {% set data = load_setup_py_data() %}
+
+package:
+  name: {{ environ.get('CONDA_PKG') }}
+  version: {{ environ.get('CONDA_PKG_VERSION') }}
+
+source:
+    path: ../
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - parasail
+    - biopython
+    - matplotlib
+    - six
+    - tqdm
+    - pandas
+    - pytest
+
+test:
+  imports:
+    - pychopper
+
+about:
+  home: "https://github.com/nanoporetech/pychopper"
+  license: Mozilla Public License 2.0 
+  license_family: OTHER
+  license_file: LICENSE.md
+  summary: "Identify, orient and trim full-length Nanopore cDNA reads."
+  doc_url: https://github.com/nanoporetech/pychopper
+  dev_url: https://github.com/nanoporetech/pychopper
+
+extra:
+  recipe-maintainers:
+    - cjw85
+
