@@ -1,8 +1,7 @@
 edlib
 parasail
-biopython
 matplotlib
 six
 tqdm
 pandas
-pytest
+numpy

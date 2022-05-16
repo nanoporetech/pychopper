@@ -9,6 +9,9 @@ package:
 source:
     path: ../
 
+python:
+  - 3.8
+
 build:
   number: 0
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
@@ -21,12 +24,11 @@ requirements:
   run:
     - edlib
     - parasail-python
-    - biopython
     - matplotlib
     - six
     - tqdm
     - pandas
-    - pytest
+    - numpy
 
 test:
   imports:
