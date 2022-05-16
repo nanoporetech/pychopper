@@ -62,16 +62,6 @@ deploy-checks:
     rules:
         - if: '$CI_COMMIT_TAG =~ /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/'
 
-deploy:pypi:
-    stage: release
-    script:
-        - *prep-image
-        - make pypi_build/bin/activate
-        - source pypi_build/bin/activate
-        - twine upload --non-interactive dist/*.tar.gz
-    rules:
-        - if: '$CI_COMMIT_TAG =~ /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/'
-
 conda:
     extends:
         - .deploy-conda
