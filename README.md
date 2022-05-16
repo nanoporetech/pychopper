@@ -4,7 +4,7 @@
 
 Pychopper
 =========
-[![CircleCI](https://circleci.com/gh/nanoporetech/pychopper.svg?style=svg)](https://circleci.com/gh/nanoporetech/pychopper) [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/pychopper/README.html)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/pychopper/README.html)
 
 Pychopper v2 is a tool to identify, orient and trim full-length Nanopore cDNA reads. The tool is also able to rescue fused reads.
 
