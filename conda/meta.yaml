@@ -32,13 +32,13 @@ test:
     - pychopper
 
 about:
-  home: "https://github.com/nanoporetech/pychopper"
+  home: "https://github.com/epi2me-labs/pychopper"
   license: Mozilla Public License 2.0 
   license_family: OTHER
   license_file: LICENSE.md
   summary: "Identify, orient and trim full-length Nanopore cDNA reads."
-  doc_url: https://github.com/nanoporetech/pychopper
-  dev_url: https://github.com/nanoporetech/pychopper
+  doc_url: https://github.com/epi2me-labs/pychopper
+  dev_url: https://github.com/epi2me-labs/pychopper
 
 extra:
   recipe-maintainers:
