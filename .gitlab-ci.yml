@@ -63,6 +63,8 @@ deploy-checks:
         - if: '$CI_COMMIT_TAG =~ /^v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$/'
 
 conda:
+    tags:
+        - large_ram
     extends:
         - .deploy-conda
     before_script:
