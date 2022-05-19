@@ -20,7 +20,7 @@ requirements:
     - python
   run:
     - edlib
-    - parasail
+    - parasail-python
     - matplotlib
     - six
     - tqdm==4.26.0
