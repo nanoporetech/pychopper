@@ -54,6 +54,11 @@ setup(
     install_requires=install_requires,
     tests_require=[].extend(install_requires),
     extras_require=extra_requires,
+    packages=[
+        'pychopper',
+        'pychopper.phmm_data',
+        'pychopper.primer_data'
+    ],
     package_dir={'pychopper': 'pychopper'},
     package_data={'pychopper': ['primer_data/*.fas', 'phmm_data/*.*']},
     zip_safe=False,
