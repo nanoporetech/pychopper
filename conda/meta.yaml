@@ -10,7 +10,7 @@ source:
     path: ../
 
 build:
-  number: 0
+  number: 1
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
   noarch: python
 
@@ -20,7 +20,7 @@ requirements:
     - python
   run:
     - edlib
-    - parasail-python
+    - parasail
     - matplotlib
     - six
     - tqdm==4.26.0
