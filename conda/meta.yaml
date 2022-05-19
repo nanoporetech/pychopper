@@ -17,26 +17,28 @@ build:
 requirements:
   host:
     - pip
-    - python
+    - python >=3
   run:
-    - edlib
+    - python >=3
+    - python-edlib
     - parasail-python
-    - matplotlib
+    - hmmer >=3.2
+    - tqdm
+    - matplotlib-base
+    - seaborn
     - six
-    - tqdm==4.26.0
     - pandas
-    - numpy
 
 test:
-  imports:
-    - pychopper
+  commands:
+    - cdna_classifier.py --help
 
 about:
   home: "https://github.com/epi2me-labs/pychopper"
   license: Mozilla Public License 2.0 
   license_family: OTHER
   license_file: LICENSE.md
-  summary: "Identify, orient and trim full-length Nanopore cDNA reads."
+  summary: "A tool to identify, orient and rescue full length cDNA reads from nanopore data.",
   doc_url: https://github.com/epi2me-labs/pychopper
   dev_url: https://github.com/epi2me-labs/pychopper
 
