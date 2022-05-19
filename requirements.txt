@@ -1,7 +1,7 @@
-edlib
 parasail
+biopython
 matplotlib
 six
-tqdm==4.26.0
+tqdm
 pandas
-numpy
+pytest
