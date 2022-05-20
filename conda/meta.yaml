@@ -22,7 +22,7 @@ requirements:
     - python >=3
     - python-edlib
     - parasail-python
-    - hmmer >=3.2
+    - hmmer
     - tqdm==4.26.0
     - matplotlib-base
     - seaborn
