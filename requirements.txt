@@ -1,4 +1,4 @@
-parasail-python
+parasail
 biopython
 matplotlib
 six
