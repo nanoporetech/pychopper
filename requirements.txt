@@ -2,6 +2,6 @@ parasail
 biopython
 matplotlib
 six
-tqdm
+tqdm==4.26.0
 pandas
 pytest
