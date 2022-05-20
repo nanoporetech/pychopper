@@ -38,7 +38,7 @@ about:
   license: Mozilla Public License 2.0 
   license_family: OTHER
   license_file: LICENSE.md
-  summary: "A tool to identify, orient and rescue full length cDNA reads from nanopore data.",
+  summary: "A tool to identify, orient and rescue full length cDNA reads from nanopore data."
   doc_url: https://github.com/epi2me-labs/pychopper
   dev_url: https://github.com/epi2me-labs/pychopper
 
