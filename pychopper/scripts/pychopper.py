@@ -166,7 +166,7 @@ def _plot_pd_line(df, title, report, alpha=0.7, xrot=0, vline=None):
         report.save_close()
 
 
-def _plot_stats(st, pdf):
+def _plot_stats(st, pdf, q, q_bak):
     "Generate plots and save to report PDF"
     R = report.Report(pdf)
     rs = st.loc[st.Category == "Classification", ]
@@ -185,7 +185,7 @@ def _plot_stats(st, pdf):
     _plot_pd_bars(st.loc[st.Category == "RescueHitNr", ].copy(), "Number of hits in rescued reads", R)
     _plot_pd_bars(st.loc[st.Category == "RescueSegmentNr", ].copy(), "Number of usable segments per rescued read", R)
     if q_bak is None:
-        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4g}".format(args.q), R, vline=args.q)
+        _plot_pd_line(st.loc[st.Category == "AutotuneSample", ].copy(), "Usable bases as function of cutoff(q). Best q={:.4g}".format(q), R, vline=q)
     udf = st.loc[st.Category == "Unusable", ].copy()
     udf.Name = np.log10(1.0 + np.array(udf.Name, dtype=float))
     _plot_pd_line(udf, "Log10 length distribution of trimmed away sequences.", R)
@@ -228,8 +228,8 @@ def main():
         help="Minimum segment length (50).")
     parser.add_argument(
         '-r', metavar='report_pdf', type=str,
-        default="cdna_classifier_report.pdf",
-        help="Report PDF (cdna_classifier_report.pdf).")
+        default="pychopper.pdf",
+        help="Report PDF (pychopper.pdf).")
     parser.add_argument(
         '-u', metavar='unclass_output', type=str, default=None,
         help="Write unclassified reads to this file.")
@@ -241,7 +241,7 @@ def main():
         help="Write rescued reads to this file.")
     parser.add_argument(
         '-S', metavar='stats_output', type=str,
-        default="cdna_classifier_report.tsv",
+        default="pychopper.tsv",
         help="Write statistics to this file.")
     parser.add_argument(
         '-K', metavar='qc_fail_output', type=str, default=None,
@@ -384,6 +384,7 @@ def main():
     nr_records = None
     tune_df = None
     q_bak = args.q
+
     if args.q is None:
         nr_cutoffs = args.L
         cutoffs = np.linspace(0.0, 1.0, num=nr_cutoffs)
@@ -519,7 +520,7 @@ def main():
         fh.close()
 
     if args.r is not None:
-        _plot_stats(stdf, args.r)
+        _plot_stats(stdf, args.r, args.q, q_bak)
 
 
 if __name__ == '__main__':
