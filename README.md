@@ -4,7 +4,6 @@
 
 Pychopper
 =========
-[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat)](http://bioconda.github.io/recipes/pychopper/README.html)
 
 Pychopper v2 is a tool to identify, orient and trim full-length Nanopore cDNA reads. The tool is also able to rescue fused reads.
 
@@ -41,10 +40,10 @@ Install via pip:
 pip install git+https://github.com/nanoporetech/pychopper.git
 ```
 
-Or install from bioconda:
+Or install from the epi2melabs channel on conda :
 
 ```bash
-conda install -c bioconda "pychopper>=2.0"
+conda install pychopper -c epi2melabs -c bioconda -c conda-forge
 ```
 
 Run the tests:
