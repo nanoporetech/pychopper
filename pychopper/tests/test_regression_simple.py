@@ -12,7 +12,7 @@ class TestIntegration(unittest.TestCase):
         pkg_base = path.dirname(path.dirname(base))
         test_base = path.join(base, 'data')
 
-        cdna_classifier = path.join(pkg_base, 'scripts', 'cdna_classifier.py')
+        cdna_classifier = path.join(pkg_base, 'scripts', 'pychopper')
         barcodes = path.join(test_base, 'barcodes.fas')
         input_fasta = path.join(test_base, 'ref.fq')
         output_fasta = path.join(test_base, 'test_output.fq')

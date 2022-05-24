@@ -56,6 +56,7 @@ setup(
     extras_require=extra_requires,
     packages=[
         'pychopper',
+        'pychopper.scripts',
         'pychopper.phmm_data',
         'pychopper.primer_data'
     ],
@@ -63,6 +64,11 @@ setup(
     package_data={'pychopper': ['primer_data/*.fas', 'phmm_data/*.*']},
     zip_safe=False,
     data_files=data_files,
-    scripts=[x for x in glob('scripts/*.py') if x != 'scripts/__init__.py']
+    # scripts=[x for x in glob('scripts/*.py') if x != 'scripts/__init__.py']
+    entry_points ={
+        'console_scripts': [
+            'pychopper=pychopper.scripts.pychopper:main'
+        ]
+    }
 )
 

@@ -18,59 +18,6 @@ import pychopper.phmm_data as phmm_data
 import pychopper.primer_data as primer_data
 
 
-"""
-Parse command line arguments.
-"""
-parser = argparse.ArgumentParser(
-    description='Tool to identify, orient and rescue full-length cDNA reads.')
-parser.add_argument(
-    '-b', metavar='primers', type=str, default=None, help="Primers fasta.", required=False)
-parser.add_argument(
-    '-g', metavar='phmm_file', type=str, default=None, help="File with custom profile HMMs (None).", required=False)
-parser.add_argument(
-    '-c', metavar='config_file', type=str, default=None, help="File to specify primer configurations for each direction (None).")
-parser.add_argument(
-    '-k', metavar='kit', type=str, default="PCS109", help="Use primer sequences from this kit (PCS109).")
-parser.add_argument(
-    '-q', metavar='cutoff', type=float, default=None, help="Cutoff parameter (autotuned).")
-parser.add_argument(
-    '-Q', metavar='min_qual', type=float, default=7.0, help="Minimum mean base quality (7.0).")
-parser.add_argument(
-    '-z', metavar='min_len', type=int, default=50, help="Minimum segment length (50).")
-parser.add_argument(
-    '-r', metavar='report_pdf', type=str, default="cdna_classifier_report.pdf", help="Report PDF (cdna_classifier_report.pdf).")
-parser.add_argument(
-    '-u', metavar='unclass_output', type=str, default=None, help="Write unclassified reads to this file.")
-parser.add_argument(
-    '-l', metavar='len_fail_output', type=str, default=None, help="Write fragments failing the length filter in this file.")
-parser.add_argument(
-    '-w', metavar='rescue_output', type=str, default=None, help="Write rescued reads to this file.")
-parser.add_argument(
-    '-S', metavar='stats_output', type=str, default="cdna_classifier_report.tsv", help="Write statistics to this file.")
-parser.add_argument(
-    '-K', metavar='qc_fail_output', type=str, default=None, help="Write reads failing mean quality filter to this file.")
-parser.add_argument(
-    '-Y', metavar='autotune_nr', type=float, default=10000, help="Approximate number of reads used for tuning the cutoff parameter (10000).")
-parser.add_argument(
-    '-L', metavar='autotune_samples', type=int, default=30, help="Number of samples taken when tuning cutoff parameter (30).")
-parser.add_argument(
-    '-A', metavar='scores_output', type=str, default=None, help="Write alignment scores to this BED file.")
-parser.add_argument(
-    '-m', metavar='method', type=str, default="phmm", help="Detection method: phmm or edlib (phmm).")
-parser.add_argument(
-    '-x', metavar='rescue', type=str, default=None, help="Protocol-specific read rescue: DCS109 (None).")
-parser.add_argument(
-    '-p', action='store_true', default=False, help="Keep primers, but trim the rest.")
-parser.add_argument(
-    '-t', metavar='threads', type=int, default=8, help="Number of threads to use (8).")
-parser.add_argument(
-    '-B', metavar='batch_size', type=int, default=1000000, help="Maximum number of reads processed in each batch (1000000).")
-parser.add_argument(
-    '-D', metavar='read stats', type=str, default=None, help="Tab separated file with per-read stats (None).")
-parser.add_argument('input_fastx', metavar='input_fastx', type=str, help="Input file.")
-parser.add_argument('output_fastx', metavar='output_fastx', nargs="?", type=str, default="-", help="Output file.")
-
-
 def _new_stats():
     "Initialize a new statistic dictionary"
     st = OrderedDict()
@@ -252,7 +199,85 @@ def _opener(filename, mode, encoding='utf8'):
         return open(filename, mode, encoding=encoding)
 
 
-if __name__ == '__main__':
+def main():
+    """
+    Parse command line arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description='Tool to identify, orient and rescue full-length cDNA reads.')
+    parser.add_argument(
+        '-b', metavar='primers', type=str, default=None, help="Primers fasta.",
+        required=False)
+    parser.add_argument(
+        '-g', metavar='phmm_file', type=str, default=None,
+        help="File with custom profile HMMs (None).", required=False)
+    parser.add_argument(
+        '-c', metavar='config_file', type=str, default=None,
+        help="File to specify primer configurations for each direction (None).")
+    parser.add_argument(
+        '-k', metavar='kit', type=str, default="PCS109",
+        help="Use primer sequences from this kit (PCS109).")
+    parser.add_argument(
+        '-q', metavar='cutoff', type=float, default=None,
+        help="Cutoff parameter (autotuned).")
+    parser.add_argument(
+        '-Q', metavar='min_qual', type=float, default=7.0,
+        help="Minimum mean base quality (7.0).")
+    parser.add_argument(
+        '-z', metavar='min_len', type=int, default=50,
+        help="Minimum segment length (50).")
+    parser.add_argument(
+        '-r', metavar='report_pdf', type=str,
+        default="cdna_classifier_report.pdf",
+        help="Report PDF (cdna_classifier_report.pdf).")
+    parser.add_argument(
+        '-u', metavar='unclass_output', type=str, default=None,
+        help="Write unclassified reads to this file.")
+    parser.add_argument(
+        '-l', metavar='len_fail_output', type=str, default=None,
+        help="Write fragments failing the length filter in this file.")
+    parser.add_argument(
+        '-w', metavar='rescue_output', type=str, default=None,
+        help="Write rescued reads to this file.")
+    parser.add_argument(
+        '-S', metavar='stats_output', type=str,
+        default="cdna_classifier_report.tsv",
+        help="Write statistics to this file.")
+    parser.add_argument(
+        '-K', metavar='qc_fail_output', type=str, default=None,
+        help="Write reads failing mean quality filter to this file.")
+    parser.add_argument(
+        '-Y', metavar='autotune_nr', type=float, default=10000,
+        help="Approximate number of reads used for tuning the cutoff parameter (10000).")
+    parser.add_argument(
+        '-L', metavar='autotune_samples', type=int, default=30,
+        help="Number of samples taken when tuning cutoff parameter (30).")
+    parser.add_argument(
+        '-A', metavar='scores_output', type=str, default=None,
+        help="Write alignment scores to this BED file.")
+    parser.add_argument(
+        '-m', metavar='method', type=str, default="phmm",
+        help="Detection method: phmm or edlib (phmm).")
+    parser.add_argument(
+        '-x', metavar='rescue', type=str, default=None,
+        help="Protocol-specific read rescue: DCS109 (None).")
+    parser.add_argument(
+        '-p', action='store_true', default=False,
+        help="Keep primers, but trim the rest.")
+    parser.add_argument(
+        '-t', metavar='threads', type=int, default=8,
+        help="Number of threads to use (8).")
+    parser.add_argument(
+        '-B', metavar='batch_size', type=int, default=1000000,
+        help="Maximum number of reads processed in each batch (1000000).")
+    parser.add_argument(
+        '-D', metavar='read stats', type=str, default=None,
+        help="Tab separated file with per-read stats (None).")
+    parser.add_argument('input_fastx', metavar='input_fastx', type=str,
+                        help="Input file.")
+    parser.add_argument('output_fastx', metavar='output_fastx', nargs="?",
+                        type=str, default="-", help="Output file.")
+
     args = parser.parse_args()
 
     if args.m == "phmm":
@@ -350,7 +375,8 @@ if __name__ == '__main__':
             return chopper.chopper_phmm(x, args.g, config, q, args.t, pool, mb)
     elif args.m == "edlib":
         def backend(x, pool, q=None, mb=None):
-            return chopper.chopper_edlib(x, all_primers, config, q * 1.2, q, pool, mb)
+            return chopper.chopper_edlib(x, all_primers, config, q * 1.2, q,
+                                         pool, mb)
     else:
         raise Exception("Invalid backend!")
 
@@ -363,10 +389,11 @@ if __name__ == '__main__':
         cutoffs = np.linspace(0.0, 1.0, num=nr_cutoffs)
         cutoffs = cutoffs / cutoffs[-1]
         if args.m == "phmm":
-            cutoffs = np.linspace(10**-5, 5.0, num=nr_cutoffs)
+            cutoffs = np.linspace(10 ** -5, 5.0, num=nr_cutoffs)
         class_reads = []
         class_readLens = []
-        nr_records = utils.count_fastq_records(args.input_fastx, opener=_opener)
+        nr_records = utils.count_fastq_records(args.input_fastx,
+                                               opener=_opener)
         opt_batch = int(nr_records / args.t)
         if opt_batch < args.B:
             args.B = opt_batch
@@ -375,17 +402,29 @@ if __name__ == '__main__':
             target_prop = args.Y / float(nr_records)
         if target_prop > 1.0:
             target_prop = 1.0
-        sys.stderr.write("Counting fastq records in input file: {}\n".format(args.input_fastx))
-        sys.stderr.write("Total fastq records in input file: {}\n".format(nr_records))
-        read_sample = list(seu.readfq(_opener(args.input_fastx, "r"), sample=target_prop, min_qual=args.Q))
-        sys.stderr.write("Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%) passing quality filters (Q >= {}).\n".format(len(read_sample), target_prop * 100.0, args.Q))
+        sys.stderr.write("Counting fastq records in input file: {}\n".format(
+            args.input_fastx))
+        sys.stderr.write(
+            "Total fastq records in input file: {}\n".format(nr_records))
+        read_sample = list(
+            seu.readfq(_opener(args.input_fastx, "r"), sample=target_prop,
+                       min_qual=args.Q))
+        sys.stderr.write(
+            "Tuning the cutoff parameter (q) on {} sampled reads ({:.1f}%) passing quality filters (Q >= {}).\n".format(
+                len(read_sample), target_prop * 100.0, args.Q))
         sys.stderr.write("Optimizing over {} cutoff values.\n".format(args.L))
         for qv in tqdm.tqdm(cutoffs):
             clsLen = 0
             cls = 0
-            with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
+            with concurrent.futures.ProcessPoolExecutor(
+                    max_workers=args.t) as executor:
                 for batch in utils.batch(read_sample, int((len(read_sample)))):
-                    for read, (segments, hits, usable_len) in backend(batch, executor, qv, max(1000, int((len(read_sample)) / args.t))):
+                    for read, (segments, hits, usable_len) in backend(batch,
+                                                                      executor,
+                                                                      qv,
+                                                                      max(1000,
+                                                                          int((
+                                                                              len(read_sample)) / args.t))):
                         flt = list([x.Len for x in segments if x.Len > 0])
                         if len(flt) == 1:
                             clsLen += sum(flt)
@@ -404,8 +443,11 @@ if __name__ == '__main__':
         tune_df["Name"] += ["Cutoff(q)"]
         tune_df["Value"] += [args.q]
         if best_qi == (len(class_reads) - 1):
-            sys.stderr.write("Best cuttoff value is at the edge of the search interval! Using tuned value is not safe! Please pick a q value manually and QC your data!\n")
-        sys.stderr.write("Best cutoff (q) value is {:.4g} with {:.0f}% of the reads classified.\n".format(args.q, class_reads[best_qi] * 100 / len(read_sample)))
+            sys.stderr.write(
+                "Best cuttoff value is at the edge of the search interval! Using tuned value is not safe! Please pick a q value manually and QC your data!\n")
+        sys.stderr.write(
+            "Best cutoff (q) value is {:.4g} with {:.0f}% of the reads classified.\n".format(
+                args.q, class_reads[best_qi] * 100 / len(read_sample)))
 
     if nr_records is not None:
         input_size = nr_records
@@ -413,20 +455,27 @@ if __name__ == '__main__':
             args.B = nr_records
         if args.B == 0:
             args.B = 1
-    sys.stderr.write("Processing the whole dataset using a batch size of {}:\n".format(args.B))
+    sys.stderr.write(
+        "Processing the whole dataset using a batch size of {}:\n".format(
+            args.B))
     pbar = tqdm.tqdm(total=input_size)
     min_batch_size = max(int(args.B / args.t), 1)
     rfq_sup = {"out_fq": args.K, "pass": 0, "total": 0}
-    with concurrent.futures.ProcessPoolExecutor(max_workers=args.t) as executor:
-        for batch in utils.batch(seu.readfq(in_fh, min_qual=args.Q, rfq_sup=rfq_sup), args.B):
-            for read, (segments, hits, usable_len) in backend(batch, executor, q=args.q, mb=min_batch_size):
+    with concurrent.futures.ProcessPoolExecutor(
+            max_workers=args.t) as executor:
+        for batch in utils.batch(
+                seu.readfq(in_fh, min_qual=args.Q, rfq_sup=rfq_sup), args.B):
+            for read, (segments, hits, usable_len) in backend(batch, executor,
+                                                              q=args.q,
+                                                              mb=min_batch_size):
                 if args.A is not None:
                     for h in hits:
                         a_fh.write(utils.hit2bed(h, read) + "\n")
                 _update_stats(st, d_fh, segments, hits, usable_len, read)
                 if args.u is not None and len(segments) == 0:
                     seu.writefq(read, u_fh)
-                for trim_read in chopper.segments_to_reads(read, segments, args.p):
+                for trim_read in chopper.segments_to_reads(read, segments,
+                                                           args.p):
                     if args.l is not None and len(trim_read.Seq) < args.z:
                         st["LenFail"] += 1
                         seu.writefq(trim_read, l_fh)
@@ -444,8 +493,12 @@ if __name__ == '__main__':
     fail_nr = rfq_sup["total"] - rfq_sup["pass"]
     fail_pc = (fail_nr * 100 / rfq_sup["total"])
     st["QcFail"] = fail_nr
-    sys.stderr.write("Input reads failing mean quality filter (Q < {}): {} ({:.2f}%)\n".format(args.Q, fail_nr, fail_pc))
-    sys.stderr.write("Output fragments failing length filter (length < {}): {}\n".format(args.z, st["LenFail"]))
+    sys.stderr.write(
+        "Input reads failing mean quality filter (Q < {}): {} ({:.2f}%)\n".format(
+            args.Q, fail_nr, fail_pc))
+    sys.stderr.write(
+        "Output fragments failing length filter (length < {}): {}\n".format(
+            args.z, st["LenFail"]))
 
     # Save stats as TSV:
     stdf = None
@@ -467,3 +520,8 @@ if __name__ == '__main__':
 
     if args.r is not None:
         _plot_stats(stdf, args.r)
+
+
+if __name__ == '__main__':
+    main()
+
