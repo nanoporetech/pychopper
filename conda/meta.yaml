@@ -10,16 +10,16 @@ source:
     path: ../
 
 build:
-  number: 6
+  number: 7
   script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
   noarch: python
 
 requirements:
   host:
     - pip
-    - python >=3
+    - python >=3.9
   run:
-    - python >=3
+    - python >=3.9
     - python-edlib
     - parasail-python
     - hmmer
