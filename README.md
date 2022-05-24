@@ -22,42 +22,18 @@ The general approach of Pychopper v2 is the following:
 Getting Started
 ================
 
-## Dependencies
-
-
-The required Python packages are installed by either `pip` or `conda`. The profile HMM alignment backend depends on the latest [hmmer](http://hmmer.org/) package.
-This can be easily installed using conda:
-
-```bash
-conda install -c bioconda "hmmer>=3.0"
-```
-
 ## Installation
 
-Install via pip:
-
-```bash
-pip install git+https://github.com/nanoporetech/pychopper.git
-```
-
-Or install from the epi2melabs channel on conda :
+Install using conda :
 
 ```bash
 conda install pychopper -c epi2melabs -c bioconda -c conda-forge
 ```
 
-Run the tests:
-
-```bash
-make test
-```
-
-Issue `make help` to get a list of `make` targets.
-
 ## Usage
 
 ```
-usage: cdna_classifier.py [-h] [-b primers] [-g phmm_file] [-c config_file]
+usage: pychopper [-h] [-b primers] [-g phmm_file] [-c config_file]
                           [-k kit] [-q cutoff] [-Q min_qual] [-z min_len]
                           [-r report_pdf] [-u unclass_output]
                           [-l len_fail_output] [-w rescue_output]
@@ -109,18 +85,18 @@ optional arguments:
 Example usage with default PCS109/DCS109 primers using the default pHMM backend:
 
 ```bash
-cdna_classifier.py -r report.pdf -u unclassified.fq -w rescued.fq input.fq full_length_output.fq
+pychopper -r report.pdf -u unclassified.fq -w rescued.fq input.fq full_length_output.fq
 ```
 
 Example usage with default PCS109/DCS109 primers using the edlib/parasail backend:
 
 ```bash
-cdna_classifier.py -m edlib -r report.pdf -u unclassified.fq -w rescued.fq input.fq full_length_output.fq
+pychopper -m edlib -r report.pdf -u unclassified.fq -w rescued.fq input.fq full_length_output.fq
 ```
 Example usage with default PCS109/DCS109 primers using the default pHMM backend:
 
 ```bash
-cdna_classifier.py -r report.pdf -A aln_hits.bed -S statistics.tsv -u unclassified.fq -w rescued.fq input.fq full_length_output.fq
+pychopper -r report.pdf -A aln_hits.bed -S statistics.tsv -u unclassified.fq -w rescued.fq input.fq full_length_output.fq
 ```
 
 ### Advanced usage
@@ -128,51 +104,15 @@ cdna_classifier.py -r report.pdf -A aln_hits.bed -S statistics.tsv -u unclassifi
 The fasta files with custom primers used by the `edlib/parasail` backend can be specified through `-b`, while the valid primer configurations are specified through `-c`:
 
 ```bash
-cdna_classifier.py -m edlib -b custom_pimers.fas -c primer_config.txt input.fq full_length_output.fq
+pychopper -m edlib -b custom_pimers.fas -c primer_config.txt input.fq full_length_output.fq
 ```
 Where the contents of `primer_config.txt` looks like `+:MySSP,-MyVNP|-:MyVNP,-MySSP`.
 
 The `pHMM` alignment backend takes a "compressed" profile HMM trained from a multiple sequence alignment using the [hmmer](http://hmmer.org/) package. Custom profile HMMs can be trained from a fastq of reads and a fasta file with the primer sequences using the [hammerpede](https://github.com/nanoporetech/hammerpede) package. The path to the custom profile HMM can be specified using `-g`:
 
 ```bash
-cdna_classifier.py -m phmm -g MySSP_MyVNP.hmm -c primer_config.txt input.fq full_length_output.fq
+pychopper -m phmm -g MySSP_MyVNP.hmm -c primer_config.txt input.fq full_length_output.fq
 ```
-
-Evaluation
-==========
-
-## Performance on SIRV E0 mix spike-in data
-
-Evaluation on 50k reads from a [SIRV](https://www.lexogen.com/sirvs) E0 mix dataset produced by the PCS109 protocol indicated good performance using both backends:
-
-- More than 85% of the reads were classified, while the percent of classified and rescued reads was higher than 90%:
-
-![sirv_stats](/evaluation/img/sirv_stats.png)
-
-- The oriented reads came from the + and - strands in a roughly 1:1 proportion as expected:
-
-![sirv_strand](/evaluation/img/sirv_strand.png)
-
-- When mapping the oriented reads to the transcriptome, virtually all of them map in the forward direction as expected:
-
-![sirv_map_strand](/evaluation/img/sirv_map_strand.png)
-
-- Comparing the percent of reads covered by alignment before and after trimming, we observe that trimming removed the adapters and the primers:
-
-![sirv_read_cov](/evaluation/img/sirv_read_cov.png)
-
-- Comparing the percent of reference transcripts covered by alignment before and after trimming, we can observe that trimming did not change its value in most of the cases, hence it only rarely removed valid sequence portions:
-
-![sirv_ref_cov](/evaluation/img/sirv_ref_cov.png)
-
-The evaluation can be re-run by issuing `make` from the `evaluation` directory.
-
-Contributing
-================
-
-- Please fork the repository and create a merge request to contribute.
-- Use [bumpversion](https://github.com/peritus/bumpversion) to manage package versioning.
-- The code should be [PEP8](https://www.python.org/dev/peps/pep-0008) compliant, which can be tested by `make lint`.
 
 Help
 ====
