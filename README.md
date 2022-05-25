@@ -59,7 +59,7 @@ optional arguments:
   -q cutoff            Cutoff parameter (autotuned).
   -Q min_qual          Minimum mean base quality (7.0).
   -z min_len           Minimum segment length (50).
-  -r report_pdf        Report PDF (cdna_classifier_report.pdf).
+  -r report_pdf        Report PDF (pychopper_report.pdf).
   -u unclass_output    Write unclassified reads to this file.
   -l len_fail_output   Write fragments failing the length filter in this file.
   -w rescue_output     Write rescued reads to this file.
