@@ -13,10 +13,10 @@ all:
 	@echo Reads are at: $(REF)
 	# seqkit sample -n $(NR_READS) $(READS) > $(IN)
 	./scripts/process_reads.sh $(REF) $(IN) $(CORES) RAW
-	cdna_classifier.py -S phmm_report.tsv -A phmm_hits.bed -w $(RES_PHMM) -t $(CORES) -m phmm -Y $(TUN_SAMPLE) -r phmm_pychopper_report.pdf $(IN) $(IN_PHMM)
+	pychopper -S phmm_report.tsv -A phmm_hits.bed -w $(RES_PHMM) -t $(CORES) -m phmm -Y $(TUN_SAMPLE) -r phmm_pychopper_report.pdf $(IN) $(IN_PHMM)
 	./scripts/process_reads.sh $(REF) $(IN_PHMM) $(CORES) TRIM_PHMM
 	./scripts/process_reads.sh $(REF) $(RES_PHMM) $(CORES) RES_PHMM
-	cdna_classifier.py -S edlib_report.tsv -A edlib_hits.bed -w $(RES_EDLIB) -t $(CORES) -m edlib -Y $(TUN_SAMPLE) -r edlib_pychopper_report.pdf $(IN) $(IN_EDLIB)
+	pychopper -S edlib_report.tsv -A edlib_hits.bed -w $(RES_EDLIB) -t $(CORES) -m edlib -Y $(TUN_SAMPLE) -r edlib_pychopper_report.pdf $(IN) $(IN_EDLIB)
 	./scripts/process_reads.sh $(REF) $(IN_EDLIB) $(CORES) TRIM_EDLIB
 	./scripts/process_reads.sh $(REF) $(RES_EDLIB) $(CORES) RES_EDLIB
 

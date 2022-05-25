@@ -32,7 +32,7 @@ requirements:
 
 test:
   commands:
-    - cdna_classifier.py --help
+    - pychopper --help
 
 about:
   home: "https://github.com/epi2me-labs/pychopper"
